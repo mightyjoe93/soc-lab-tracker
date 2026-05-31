@@ -3,838 +3,742 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SOC Analyst Lab Tracker</title>
+<title>SOC Analyst Lab Tracker — mightyjoe93</title>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Exo+2:wght@300;400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Exo+2:wght@300;400;600&display=swap');
+:root{--bg:#0a0c10;--panel:#0f1318;--border:#1e2a35;--accent:#00e5ff;--accent2:#7c3aed;--accent3:#10b981;--warn:#f59e0b;--danger:#ef4444;--text:#c9d1d9;--muted:#4a5568;--bright:#e2e8f0;--code-bg:#070a0e;--code-border:#243040;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;font-weight:300;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.container{max-width:1100px;margin:0 auto;padding:40px 20px;position:relative;z-index:1;}
+header{text-align:center;margin-bottom:40px;padding-bottom:28px;border-bottom:1px solid var(--border);position:relative;}
+header::after{content:'';position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);width:200px;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);}
+.header-tag{font-family:'Share Tech Mono',monospace;color:var(--accent);font-size:.75rem;letter-spacing:4px;text-transform:uppercase;margin-bottom:12px;opacity:.8;}
+h1{font-family:'Rajdhani',sans-serif;font-size:clamp(2rem,5vw,3.5rem);font-weight:700;color:var(--bright);letter-spacing:2px;line-height:1.1;margin-bottom:8px;}
+h1 span{color:var(--accent);}
+.subtitle{font-family:'Share Tech Mono',monospace;color:var(--muted);font-size:.85rem;letter-spacing:2px;}
 
-  :root {
-    --bg: #0a0c10;
-    --panel: #0f1318;
-    --border: #1e2a35;
-    --accent: #00e5ff;
-    --accent2: #7c3aed;
-    --accent3: #10b981;
-    --warn: #f59e0b;
-    --danger: #ef4444;
-    --text: #c9d1d9;
-    --muted: #4a5568;
-    --bright: #e2e8f0;
-  }
+/* SYNC BAR */
+.sync-bar{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent2);padding:12px 18px;margin-bottom:24px;font-family:'Share Tech Mono',monospace;font-size:.7rem;}
+.sync-bar.connected{border-left-color:var(--accent3);}
+.sync-bar.error{border-left-color:var(--danger);}
+.sync-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.sync-dot.on{background:var(--accent3);box-shadow:0 0 6px var(--accent3);}
+.sync-dot.warn{background:var(--warn);box-shadow:0 0 6px var(--warn);}
+.sync-label{color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.sync-key-val{color:var(--accent);letter-spacing:3px;font-size:.8rem;}
+.sync-actions{display:flex;gap:8px;margin-left:auto;}
+.sync-btn{font-family:'Share Tech Mono',monospace;font-size:.6rem;padding:3px 10px;border:1px solid var(--accent2);background:transparent;color:var(--accent2);cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;}
+.sync-btn:hover{background:rgba(124,58,237,.15);}
+.sync-btn.green{border-color:var(--accent3);color:var(--accent3);}
+.sync-btn.green:hover{background:rgba(16,185,129,.1);}
+.sync-setup{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:none;}
+.sync-setup.open{display:block;}
+.setup-step{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;}
+.setup-num{color:var(--accent);min-width:20px;font-size:.75rem;}
+.setup-text{color:var(--text);font-family:'Exo 2',sans-serif;font-size:.8rem;line-height:1.5;}
+.setup-text a{color:var(--accent);text-decoration:none;}
+.setup-text a:hover{text-decoration:underline;}
+.key-input{background:var(--code-bg);border:1px solid var(--border);color:var(--accent);font-family:'Share Tech Mono',monospace;font-size:.75rem;padding:4px 10px;width:130px;letter-spacing:2px;text-transform:uppercase;outline:none;}
+.key-input:focus{border-color:var(--accent2);}
+.sync-note{font-family:'Exo 2',sans-serif;font-size:.75rem;color:var(--muted);margin-top:8px;line-height:1.5;}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+/* STATS */
+.stats-bar{display:flex;gap:16px;margin-bottom:28px;flex-wrap:wrap;}
+.stat-box{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);padding:14px 20px;flex:1;min-width:140px;position:relative;overflow:hidden;}
+.stat-box::before{content:'';position:absolute;top:0;right:0;width:60px;height:60px;background:radial-gradient(circle,rgba(0,229,255,.05),transparent);}
+.stat-label{font-family:'Share Tech Mono',monospace;font-size:.65rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.stat-value{font-family:'Rajdhani',sans-serif;font-size:1.6rem;font-weight:700;color:var(--accent);}
+.stat-box:nth-child(2){border-left-color:var(--accent2);}
+.stat-box:nth-child(2) .stat-value{color:var(--accent2);}
+.stat-box:nth-child(3){border-left-color:var(--accent3);}
+.stat-box:nth-child(3) .stat-value{color:var(--accent3);}
+.stat-box:nth-child(4){border-left-color:var(--warn);}
+.stat-box:nth-child(4) .stat-value{color:var(--warn);}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Exo 2', sans-serif;
-    font-weight: 300;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+/* PROGRESS */
+.progress-wrap{background:var(--panel);border:1px solid var(--border);padding:16px 20px;margin-bottom:28px;}
+.progress-label{display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:.7rem;color:var(--muted);margin-bottom:8px;letter-spacing:1px;}
+.progress-track{background:var(--border);height:6px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .6s ease;position:relative;}
+.progress-fill::after{content:'';position:absolute;right:0;top:0;width:20px;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4));animation:shimmer 1.5s ease infinite;}
+@keyframes shimmer{0%,100%{opacity:.3}50%{opacity:1}}
 
-  /* Grid background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
+/* LAB CARDS */
+.lab-card{background:var(--panel);border:1px solid var(--border);margin-bottom:14px;transition:border-color .2s,box-shadow .2s;position:relative;overflow:hidden;}
+.lab-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--muted);transition:background .3s;}
+.lab-card.complete::before{background:var(--accent3);}
+.lab-card.in-progress::before{background:var(--warn);}
+.lab-card.bonus-card::before{background:var(--accent2);}
+.lab-card:hover{border-color:rgba(0,229,255,.3);box-shadow:0 0 20px rgba(0,229,255,.05);}
+.lab-header{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;user-select:none;}
+.lab-num{font-family:'Share Tech Mono',monospace;font-size:.7rem;color:var(--muted);min-width:34px;}
+.lab-num.bonus{color:var(--accent2);font-size:.6rem;}
+.lab-title-wrap{flex:1;}
+.lab-title{font-family:'Rajdhani',sans-serif;font-size:1.05rem;font-weight:600;color:var(--bright);letter-spacing:.5px;}
+.lab-meta{display:flex;gap:10px;margin-top:5px;flex-wrap:wrap;}
+.badge{font-family:'Share Tech Mono',monospace;font-size:.6rem;padding:2px 7px;border:1px solid;letter-spacing:1px;text-transform:uppercase;}
+.badge-time{color:var(--muted);border-color:var(--border);}
+.badge-cost{color:var(--accent3);border-color:rgba(16,185,129,.3);}
+.badge-score{color:var(--warn);border-color:rgba(245,158,11,.3);}
+.badge-score.high{color:var(--accent);border-color:rgba(0,229,255,.3);}
+.badge-bonus{color:var(--accent2);border-color:rgba(124,58,237,.4);}
+.lab-controls{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.status-btn{font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:3px 9px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;letter-spacing:1px;transition:all .2s;text-transform:uppercase;}
+.status-btn:hover{border-color:var(--accent);color:var(--accent);}
+.status-btn.active-done{border-color:var(--accent3);color:var(--accent3);background:rgba(16,185,129,.08);}
+.status-btn.active-wip{border-color:var(--warn);color:var(--warn);background:rgba(245,158,11,.08);}
+.expand-icon{color:var(--muted);font-size:.8rem;transition:transform .3s;font-family:'Share Tech Mono',monospace;flex-shrink:0;}
+.lab-card.expanded .expand-icon{transform:rotate(180deg);}
 
-  .container {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 40px 20px;
-    position: relative;
-    z-index: 1;
-  }
+/* LAB BODY */
+.lab-body{display:none;padding:0 20px 22px 68px;border-top:1px solid var(--border);}
+.lab-card.expanded .lab-body{display:block;}
+.section-hdr{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin:18px 0 10px;display:flex;align-items:center;gap:8px;}
+.section-hdr::after{content:'';flex:1;height:1px;background:var(--border);}
+.simulate-text{font-size:.85rem;color:var(--text);line-height:1.6;padding:10px 14px;background:rgba(0,229,255,.03);border-left:2px solid rgba(0,229,255,.2);}
+.info-pills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px;}
+.info-pill{font-family:'Share Tech Mono',monospace;font-size:.62rem;padding:3px 9px;border:1px solid var(--border);color:var(--muted);background:rgba(255,255,255,.02);}
+.skills-text{font-size:.8rem;color:var(--muted);font-family:'Share Tech Mono',monospace;margin-top:6px;}
 
-  /* Header */
-  header {
-    text-align: center;
-    margin-bottom: 50px;
-    padding-bottom: 30px;
-    border-bottom: 1px solid var(--border);
-    position: relative;
-  }
+/* STEPS */
+.steps-list{display:flex;flex-direction:column;gap:14px;}
+.step-item{display:flex;gap:14px;align-items:flex-start;}
+.step-num{font-family:'Share Tech Mono',monospace;font-size:.7rem;color:var(--accent2);min-width:26px;padding-top:2px;letter-spacing:1px;}
+.step-body{flex:1;min-width:0;}
+.step-title{font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:600;color:var(--bright);margin-bottom:3px;}
+.step-desc{font-size:.82rem;color:var(--text);line-height:1.55;}
+.cmd-block{margin-top:8px;background:var(--code-bg);border:1px solid var(--code-border);position:relative;}
+.cmd-block pre{padding:9px 50px 9px 12px;overflow-x:auto;}
+.cmd-block code{font-family:'Share Tech Mono',monospace;font-size:.73rem;color:#7dd3fc;white-space:pre;display:block;}
+.copy-btn{position:absolute;top:6px;right:6px;font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:3px 8px;border:1px solid var(--code-border);background:var(--panel);color:var(--muted);cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent);}
+.copy-btn.copied{border-color:var(--accent3);color:var(--accent3);}
 
-  header::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 200px;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  }
+/* RESUME BULLETS */
+.resume-list{display:flex;flex-direction:column;gap:10px;}
+.resume-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;background:rgba(124,58,237,.05);border:1px solid rgba(124,58,237,.2);position:relative;}
+.resume-slash{font-family:'Share Tech Mono',monospace;font-size:.8rem;color:var(--accent2);flex-shrink:0;padding-top:1px;}
+.resume-text{font-size:.85rem;color:var(--bright);line-height:1.55;flex:1;padding-right:44px;}
+.resume-copy{position:absolute;top:10px;right:10px;font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:3px 7px;border:1px solid rgba(124,58,237,.3);background:transparent;color:var(--accent2);cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;}
+.resume-copy:hover{border-color:var(--accent2);background:rgba(124,58,237,.1);}
+.resume-copy.copied{border-color:var(--accent3);color:var(--accent3);}
+.resume-tip{font-size:.75rem;color:var(--muted);font-family:'Share Tech Mono',monospace;margin-top:10px;padding:8px 12px;border-left:2px solid var(--border);}
 
-  .header-tag {
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--accent);
-    font-size: 0.75rem;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-    opacity: 0.8;
-  }
+/* TOAST */
+.toast{position:fixed;bottom:28px;right:28px;font-family:'Share Tech Mono',monospace;font-size:.7rem;padding:9px 18px;background:var(--panel);border:1px solid var(--accent3);color:var(--accent3);letter-spacing:1px;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;z-index:999;}
+.toast.show{opacity:1;transform:translateY(0);}
 
-  h1 {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: clamp(2rem, 5vw, 3.5rem);
-    font-weight: 700;
-    color: var(--bright);
-    letter-spacing: 2px;
-    line-height: 1.1;
-    margin-bottom: 8px;
-  }
-
-  h1 span { color: var(--accent); }
-
-  .subtitle {
-    font-family: 'Share Tech Mono', monospace;
-    color: var(--muted);
-    font-size: 0.85rem;
-    letter-spacing: 2px;
-  }
-
-  /* Stats bar */
-  .stats-bar {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 36px;
-    flex-wrap: wrap;
-  }
-
-  .stat-box {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    padding: 14px 20px;
-    flex: 1;
-    min-width: 140px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .stat-box::before {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 60px; height: 60px;
-    background: radial-gradient(circle, rgba(0,229,255,0.05), transparent);
-  }
-
-  .stat-label {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--muted);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-
-  .stat-value {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--accent);
-  }
-
-  .stat-box:nth-child(2) { border-left-color: var(--accent2); }
-  .stat-box:nth-child(2) .stat-value { color: var(--accent2); }
-  .stat-box:nth-child(3) { border-left-color: var(--accent3); }
-  .stat-box:nth-child(3) .stat-value { color: var(--accent3); }
-  .stat-box:nth-child(4) { border-left-color: var(--warn); }
-  .stat-box:nth-child(4) .stat-value { color: var(--warn); }
-
-  /* Progress bar */
-  .progress-wrap {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    padding: 16px 20px;
-    margin-bottom: 36px;
-  }
-
-  .progress-label {
-    display: flex;
-    justify-content: space-between;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--muted);
-    margin-bottom: 8px;
-    letter-spacing: 1px;
-  }
-
-  .progress-track {
-    background: var(--border);
-    height: 6px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent2), var(--accent));
-    transition: width 0.6s ease;
-    position: relative;
-  }
-
-  .progress-fill::after {
-    content: '';
-    position: absolute;
-    right: 0; top: 0;
-    width: 20px; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4));
-    animation: shimmer 1.5s ease infinite;
-  }
-
-  @keyframes shimmer { 0%,100%{opacity:0.3} 50%{opacity:1} }
-
-  /* Lab cards */
-  .lab-card {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    margin-bottom: 16px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .lab-card::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: var(--muted);
-    transition: background 0.3s;
-  }
-
-  .lab-card.complete::before { background: var(--accent3); }
-  .lab-card.in-progress::before { background: var(--warn); }
-
-  .lab-card:hover {
-    border-color: rgba(0,229,255,0.3);
-    box-shadow: 0 0 20px rgba(0,229,255,0.05);
-  }
-
-  .lab-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 18px 20px;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .lab-num {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--muted);
-    min-width: 30px;
-  }
-
-  .lab-title-wrap { flex: 1; }
-
-  .lab-title {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1.05rem;
-    font-weight: 600;
-    color: var(--bright);
-    letter-spacing: 0.5px;
-  }
-
-  .lab-meta {
-    display: flex;
-    gap: 12px;
-    margin-top: 4px;
-    flex-wrap: wrap;
-  }
-
-  .badge {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.6rem;
-    padding: 2px 8px;
-    border: 1px solid;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  .badge-time { color: var(--muted); border-color: var(--border); }
-  .badge-cost { color: var(--accent3); border-color: rgba(16,185,129,0.3); }
-  .badge-score { color: var(--warn); border-color: rgba(245,158,11,0.3); }
-
-  .badge-score.high { color: var(--accent); border-color: rgba(0,229,255,0.3); }
-
-  .lab-controls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .status-btn {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.6rem;
-    padding: 4px 10px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
-    letter-spacing: 1px;
-    transition: all 0.2s;
-  }
-
-  .status-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .status-btn.active-done { border-color: var(--accent3); color: var(--accent3); background: rgba(16,185,129,0.08); }
-  .status-btn.active-wip { border-color: var(--warn); color: var(--warn); background: rgba(245,158,11,0.08); }
-
-  .expand-icon {
-    color: var(--muted);
-    font-size: 0.8rem;
-    transition: transform 0.3s;
-    font-family: 'Share Tech Mono', monospace;
-  }
-
-  .lab-card.expanded .expand-icon { transform: rotate(180deg); }
-
-  /* Lab body */
-  .lab-body {
-    display: none;
-    padding: 0 20px 20px 66px;
-    border-top: 1px solid var(--border);
-    margin-top: 0;
-  }
-
-  .lab-card.expanded .lab-body { display: block; }
-
-  .section-title {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--accent);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin: 18px 0 8px;
-  }
-
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 8px;
-    margin-bottom: 4px;
-  }
-
-  .info-item {
-    background: rgba(255,255,255,0.02);
-    border: 1px solid var(--border);
-    padding: 8px 12px;
-  }
-
-  .info-key {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.6rem;
-    color: var(--muted);
-    letter-spacing: 1px;
-    margin-bottom: 3px;
-  }
-
-  .info-val {
-    font-size: 0.82rem;
-    color: var(--text);
-  }
-
-  .summary-text {
-    font-size: 0.85rem;
-    line-height: 1.6;
-    color: var(--text);
-    background: rgba(0,229,255,0.03);
-    border-left: 2px solid rgba(0,229,255,0.2);
-    padding: 10px 14px;
-  }
-
-  .simulates-text {
-    font-size: 0.82rem;
-    line-height: 1.6;
-    color: var(--muted);
-  }
-
-  /* Resume bullets */
-  .resume-section {
-    background: rgba(124,58,237,0.06);
-    border: 1px solid rgba(124,58,237,0.2);
-    padding: 16px;
-    margin-top: 8px;
-  }
-
-  .resume-section .section-title {
-    color: var(--accent2);
-    margin-top: 0;
-  }
-
-  .resume-bullet {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-    align-items: flex-start;
-  }
-
-  .bullet-icon {
-    color: var(--accent2);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.7rem;
-    margin-top: 3px;
-    flex-shrink: 0;
-  }
-
-  .bullet-text {
-    font-size: 0.85rem;
-    line-height: 1.5;
-    color: var(--bright);
-    font-family: 'Exo 2', sans-serif;
-    font-weight: 400;
-  }
-
-  .copy-btn {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.6rem;
-    padding: 3px 8px;
-    background: rgba(124,58,237,0.15);
-    border: 1px solid rgba(124,58,237,0.3);
-    color: var(--accent2);
-    cursor: pointer;
-    letter-spacing: 1px;
-    transition: all 0.2s;
-    margin-left: 8px;
-    vertical-align: middle;
-  }
-
-  .copy-btn:hover { background: rgba(124,58,237,0.3); }
-  .copy-btn.copied { color: var(--accent3); border-color: var(--accent3); background: rgba(16,185,129,0.1); }
-
-  /* Tools list */
-  .tools-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .tool-tag {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.65rem;
-    padding: 3px 10px;
-    background: rgba(0,229,255,0.05);
-    border: 1px solid rgba(0,229,255,0.15);
-    color: var(--accent);
-    letter-spacing: 0.5px;
-  }
-
-  /* Skills list */
-  .skills-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .skill-tag {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.65rem;
-    padding: 3px 10px;
-    background: rgba(245,158,11,0.05);
-    border: 1px solid rgba(245,158,11,0.15);
-    color: var(--warn);
-  }
-
-  /* Footer */
-  footer {
-    margin-top: 50px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-    text-align: center;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--muted);
-    letter-spacing: 2px;
-  }
-
-  .toast {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: var(--accent3);
-    color: #000;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.7rem;
-    padding: 10px 16px;
-    letter-spacing: 1px;
-    opacity: 0;
-    transition: opacity 0.3s;
-    z-index: 100;
-  }
-
-  .toast.show { opacity: 1; }
+/* FOOTER */
+.footer{text-align:center;margin-top:48px;padding-top:24px;border-top:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:.65rem;color:var(--muted);letter-spacing:1px;line-height:2;}
+.footer a{color:var(--accent2);text-decoration:none;}
 </style>
 </head>
 <body>
-
 <div class="container">
-
   <header>
-    <div class="header-tag">// SOC Analyst Portfolio</div>
+    <div class="header-tag">// SOC ANALYST PORTFOLIO</div>
     <h1>LAB <span>TRACKER</span></h1>
     <div class="subtitle">10 HANDS-ON PROJECTS // SKILLS &amp; RESUME BUILDER</div>
   </header>
-
+  <div id="sync-bar" class="sync-bar"></div>
   <div class="stats-bar">
-    <div class="stat-box">
-      <div class="stat-label">Total Labs</div>
-      <div class="stat-value">11</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Completed</div>
-      <div class="stat-value" id="stat-done">0</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">In Progress</div>
-      <div class="stat-value" id="stat-wip">0</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Est. Hours</div>
-      <div class="stat-value">155+</div>
-    </div>
+    <div class="stat-box"><div class="stat-label">TOTAL LABS</div><div class="stat-value" id="stat-total">11</div></div>
+    <div class="stat-box"><div class="stat-label">COMPLETED</div><div class="stat-value" id="stat-done">0</div></div>
+    <div class="stat-box"><div class="stat-label">IN PROGRESS</div><div class="stat-value" id="stat-wip">0</div></div>
+    <div class="stat-box"><div class="stat-label">EST. HOURS</div><div class="stat-value">155+</div></div>
   </div>
-
   <div class="progress-wrap">
-    <div class="progress-label">
-      <span>COMPLETION PROGRESS</span>
-      <span id="progress-pct">0%</span>
-    </div>
-    <div class="progress-track">
-      <div class="progress-fill" id="progress-bar" style="width:0%"></div>
-    </div>
+    <div class="progress-label"><span>COMPLETION PROGRESS</span><span id="prog-pct">0%</span></div>
+    <div class="progress-track"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
   </div>
-
   <div id="labs-container"></div>
-
-  <footer>
-    ORIGINAL CONTENT CURATED BY ARTEM POLYNKO // TRACKER BUILT FOR PERSONAL USE
-  </footer>
+  <div class="footer">
+    ORIGINAL CONTENT CURATED BY ARTEM POLYNKO &nbsp;|&nbsp;
+    TRACKER BUILT BY <a href="https://github.com/mightyjoe93" target="_blank">MIGHTYJOE93</a> &nbsp;|&nbsp;
+    <a href="https://mightyjoe93.github.io/soc-lab-tracker/" target="_blank">LIVE SITE</a>
+  </div>
 </div>
-
-<div class="toast" id="toast">COPIED TO CLIPBOARD</div>
+<div class="toast" id="toast"></div>
 
 <script>
-const labs = [
+// ════════════════════════════════════════════════════════════════════
+//  FIREBASE SYNC CONFIG
+//  To enable cross-device sync:
+//  1. Go to https://console.firebase.google.com
+//  2. Create a project → Build → Realtime Database → Create database
+//  3. Set rules to: { "rules": { ".read": true, ".write": true } }
+//  4. Project Settings → General → scroll to "Your apps" → Web app → copy config
+//  5. Replace null below with your config object, then push to GitHub
+// ════════════════════════════════════════════════════════════════════
+const FIREBASE_CONFIG =  — ;
+// Example — replace null with your own:
+// const FIREBASE_CONFIG = {
+//   apiKey: "AIza...",
+//   authDomain: "your-project.firebaseapp.com",
+//   databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+//   projectId: "your-project",
+//   storageBucket: "your-project.appspot.com",
+//   messagingSenderId: "123456789",
+//   appId: "1:123456789:web:abc123"
+// };
+
+// ════════════════════════════════════════════════════════════════════
+//  LAB DATA
+// ════════════════════════════════════════════════════════════════════
+const LABS = [
   {
-    id: 1,
-    title: "SIEM Log Monitoring & Threat Detection",
-    time: "~20–30 hrs",
-    cost: "$0",
-    score: "10/10",
-    scoreHigh: true,
-    skills: ["SIEM use", "Log parsing", "Detection engineering", "Correlation"],
-    tools: ["Splunk Free", "ELK Stack", "Sysmon", "Windows/Linux VMs"],
-    summary: "Build a Splunk or ELK Stack SIEM lab. Ingest logs (e.g., Sysmon, Linux auth) and detect simulated attacks like brute force or PowerShell misuse.",
-    simulates: "Real Tier 1–2 SOC alert triage, log analysis, and use case development. Hands-on detection engineering in a monitored environment.",
-    bullets: [
-      "Built Splunk SIEM lab to ingest and analyze Sysmon/Windows logs; created custom detection rules for brute force and PowerShell-based attacks.",
-      "Simulated real-world attacks and investigated events using ELK Stack, improving response skills and detection logic."
+    id:'lab1', num:'01', bonus:false,
+    title:'SIEM Log Monitoring & Threat Detection',
+    time:'20–30 hrs', cost:'$0', value:'10/10', valueHigh:true,
+    tags:['Splunk','Sysmon','Windows VM','Universal Forwarder'],
+    skills:'SIEM use · log parsing · detection engineering · SPL queries',
+    simulate:'Real Tier 1–2 SOC alert triage, log analysis, and use case development. Hands-on detection engineering in a monitored environment.',
+    defaultStatus:'done',
+    steps:[
+      ['Install Splunk Enterprise on Ubuntu','Download Splunk (free license) from splunk.com. Install via dpkg, start the service. Access the web UI at http://localhost:8000 and create an index named main.',null],
+      ['Deploy Sysmon on Windows VM','Download Sysmon64.exe and the SwiftOnSecurity config XML. Place config at C:\\Tools\\Sysmon\\sysmonconfig-export.xml and run the install command.','Sysmon64.exe -accepteula -i sysmonconfig-export.xml'],
+      ['Configure Universal Forwarder inputs.conf','Edit inputs.conf on the Windows VM to forward Security, System, and Sysmon/Operational logs to your Splunk host on port 9997.','[WinEventLog://Security]\nindex = main\ndisabled = false\n\n[WinEventLog://System]\nindex = main\ndisabled = false\n\n[WinEventLog://Microsoft-Windows-Sysmon/Operational]\nindex = main\ndisabled = false\nrenderXml = true'],
+      ['Verify log ingestion in Splunk','Confirm 6,000+ events are flowing from all three WinEventLog sources in real time.','index=main | stats count by source'],
+      ['Build brute force detection rule','Create a saved search detecting excessive failed logons (EventCode 4625) with a count threshold.','index=main EventCode=4625 | stats count by Account_Name | where count > 10'],
+      ['Build rogue admin detection rule','Detect unauthorized account creation (4720) and group membership changes (4732) — critical Tier 1 SOC use cases.','index=main (EventCode=4720 OR EventCode=4732)\n| table _time, EventCode, Account_Name'],
+      ['Save as a real-time Splunk alert','Save As > Alert > Real-time > Per-Result > Enabled. Name it "Rogue Admin Account Creation Detected". Screenshot the alert screen for your portfolio.',null]
+    ],
+    resume:[
+      'Built Splunk SIEM lab to ingest and analyze Sysmon/Windows logs; created custom detection rules for brute force and PowerShell-based attacks.',
+      'Simulated real-world attacks including brute force login attempts and rogue admin account creation; investigated events using SPL queries and built real-time alerting rules.'
     ]
   },
   {
-    id: 2,
-    title: "Simulated Phishing Attack & Incident Response",
-    time: "~15–25 hrs",
-    cost: "$0",
-    score: "9/10",
-    scoreHigh: true,
-    skills: ["IR lifecycle", "Windows log analysis", "Evidence collection", "Reporting"],
-    tools: ["Windows VM", "Sysinternals", "Event Viewer", "Kali", "SET"],
-    summary: "Simulate a phishing-to-malware scenario in a lab. Investigate with logs and produce a detailed incident response report.",
-    simulates: "A full SOC incident involving phishing, malware, log review, containment, and documentation. Simulates Tier 1–2 escalation and response workflow.",
-    bullets: [
-      "Simulated phishing attack in lab and performed full IR process including log review, malware identification, and executive-level reporting.",
-      "Traced infection path via Windows event logs (Event ID 4688, Sysmon logs) and documented remediation steps in formal IR report."
+    id:'lab2', num:'02', bonus:false,
+    title:'Simulated Phishing Attack & Incident Response',
+    time:'15–25 hrs', cost:'$0', value:'9/10', valueHigh:true,
+    tags:['Kali Linux','SET','Sysinternals','Splunk','IR Report'],
+    skills:'IR lifecycle · Windows log analysis · evidence collection · reporting',
+    simulate:'A full SOC incident involving phishing, malware, log review, containment, and documentation. Simulates Tier 1–2 escalation and response workflow.',
+    defaultStatus:'todo',
+    steps:[
+      ['Download Sysinternals Suite on Windows VM','Go to docs.microsoft.com/sysinternals/downloads. Download the full suite, extract to C:\\Tools\\Sysinternals, and add it to your system PATH.',null],
+      ['Launch Social Engineering Toolkit on Kali','Start SET as root. Navigate: 1) Social Engineering Attacks → 2) Website Attack Vectors → 3) Credential Harvester → 2) Site Cloner.','sudo setoolkit'],
+      ['Configure credential harvester','Enter your Kali IP (192.168.56.101) as the listener when prompted. Clone a site like https://accounts.google.com. SET starts an HTTP server on port 80.',null],
+      ['Simulate a phishing victim on Windows VM','Open a browser on the Windows VM, navigate to http://192.168.56.101, and enter fake credentials. This generates the Windows event logs you will investigate.',null],
+      ['Investigate Event ID 4688 in Splunk','Search for process creation events to trace how the browser spawned child processes after the phishing interaction.','index=main EventCode=4688\n| table _time, Account_Name, Process_Name, Parent_Process_Name\n| sort _time'],
+      ['Pull Sysmon network events (Event ID 3)','Find outbound network connections from the Windows VM to the Kali IP after the simulated phishing click.','index=main source="WinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=3\n| table _time, Image, DestinationIp, DestinationPort'],
+      ['Build the incident kill chain timeline','Document the sequence: Initial Access → Execution → C2 Contact. Record exact timestamps, process names, and source IPs in a table.',null],
+      ['Write the formal Incident Response Report','Sections: Executive Summary, Incident Timeline, Indicators of Compromise, Containment Actions, Lessons Learned. This is your high-value portfolio deliverable.',null]
+    ],
+    resume:[
+      'Simulated phishing attack in lab and performed full IR process including log review, malware identification, and executive-level reporting.',
+      'Traced infection path via Windows event logs (Event ID 4688, Sysmon logs) and documented remediation steps in formal IR report.'
     ]
   },
   {
-    id: 3,
-    title: "IDS Deployment & Packet Analysis",
-    time: "~15–20 hrs",
-    cost: "$0",
-    score: "9/10",
-    scoreHigh: true,
-    skills: ["IDS/IPS", "Network protocols", "Rule tuning", "Packet analysis"],
-    tools: ["Snort", "Suricata", "Wireshark", "Metasploitable", "Kali"],
-    summary: "Deploy Snort or Suricata. Simulate attacks (e.g., Nmap, SQLi) and analyze alerts and PCAPs using Wireshark.",
-    simulates: "Real-time network intrusion detection tasks. Alert investigation based on IDS telemetry — common in Tier 1–2 SOC environments.",
-    bullets: [
-      "Deployed Suricata IDS to monitor test network; generated attack traffic and tuned rules to reduce false positives and detect SQL injection attempts.",
-      "Investigated PCAPs using Wireshark and correlated alerts with MITRE ATT&CK TTPs."
+    id:'lab3', num:'03', bonus:false,
+    title:'IDS Deployment & Packet Analysis',
+    time:'15–20 hrs', cost:'$0', value:'9/10', valueHigh:true,
+    tags:['Suricata','Wireshark','Metasploitable','Kali','MITRE ATT&CK'],
+    skills:'IDS/IPS · network protocols · rule tuning · PCAP analysis',
+    simulate:'Real-time network intrusion detection tasks. Alert investigation based on IDS telemetry — common in Tier 1–2 SOC environments.',
+    defaultStatus:'todo',
+    steps:[
+      ['Install Suricata and update signatures','Install Suricata on Ubuntu. Run suricata-update to pull the latest Emerging Threats ruleset (~40,000 rules).','sudo apt install suricata -y\nsudo suricata-update\nsudo systemctl enable suricata'],
+      ['Configure HOME_NET and listening interface','Edit /etc/suricata/suricata.yaml. Set HOME_NET to your lab subnet (e.g., [192.168.56.0/24]) and set the af-packet interface to your Host-Only adapter (eth1).',null],
+      ['Import Metasploitable2 VM','Download Metasploitable2 from Rapid7 GitHub or SourceForge. Import into VirtualBox on the same Host-Only network. Default creds: msfadmin/msfadmin.',null],
+      ['Run Nmap scan from Kali against Metasploitable','A full service and vuln scan generates port scan traffic that Suricata will detect. Check fast.log immediately after.','nmap -sV -sC -A --script=vuln 192.168.56.X'],
+      ['Simulate SQL injection with sqlmap','Run sqlmap against DVWA on Metasploitable to generate SQLi traffic. Suricata has signatures for common injection patterns.','sqlmap -u "http://192.168.56.X/dvwa/vulnerabilities/sqli/?id=1&Submit=Submit" --cookie="security=low; PHPSESSID=abc" --dbs'],
+      ['Review Suricata alerts','Check fast.log for triggered rules. Note the rule SID, severity, and source/destination IPs. Cross-reference SIDs at doc.emergingthreats.net.','sudo tail -f /var/log/suricata/fast.log'],
+      ['Capture PCAP and open in Wireshark','Capture traffic during the attacks. Apply display filters in Wireshark to isolate scan and injection traffic. Match packets to Suricata alert timestamps.','sudo tshark -i eth1 -w /tmp/lab3_capture.pcap\n# Open in Wireshark:\nwireshark /tmp/lab3_capture.pcap'],
+      ['Map all alerts to MITRE ATT&CK','For each alert type: T1046 (Network Service Scanning), T1190 (Exploit Public-Facing App). Document in a table — this is your report deliverable.',null]
+    ],
+    resume:[
+      'Deployed Suricata IDS to monitor test network; generated attack traffic and tuned rules to reduce false positives and detect SQL injection attempts.',
+      'Investigated PCAPs using Wireshark and correlated alerts with MITRE ATT&CK TTPs.'
     ]
   },
   {
-    id: 4,
-    title: "Cloud Security Monitoring with AWS/Azure Logs",
-    time: "~10–20 hrs",
-    cost: "$0",
-    score: "9/10",
-    scoreHigh: true,
-    skills: ["Cloud security", "Logging", "IAM misconfig detection"],
-    tools: ["AWS Free Tier", "GuardDuty", "CloudTrail", "ELK/Splunk"],
-    summary: "Enable CloudTrail or Defender logs. Simulate events (e.g., IAM abuse, unauthorized S3 access) and analyze them via console or SIEM.",
-    simulates: "Tier 1/2 monitoring of cloud security logs in modern hybrid SOCs. Detecting IAM privilege escalation, misconfigurations, cloud anomalies.",
-    bullets: [
-      "Configured AWS CloudTrail/GuardDuty to detect and alert on suspicious IAM events including unauthorized access and misconfigured S3 buckets.",
-      "Analyzed cloud logs and set up alerting rules to simulate SOC Tier 2 cloud monitoring workflows."
+    id:'lab4', num:'04', bonus:false,
+    title:'Cloud Security Monitoring with AWS/Azure Logs',
+    time:'10–20 hrs', cost:'$0', value:'9/10', valueHigh:true,
+    tags:['AWS CloudTrail','GuardDuty','IAM','S3','ELK/Splunk'],
+    skills:'Cloud security · IAM misconfig detection · CloudTrail log analysis',
+    simulate:'Tier 1/2 monitoring of cloud security logs in modern hybrid SOCs. Detecting IAM privilege escalation, misconfigurations, and cloud anomalies.',
+    defaultStatus:'todo',
+    steps:[
+      ['Create AWS Free Tier account','Sign up at aws.amazon.com/free. The free tier is sufficient for this entire lab. Enable MFA on your root account immediately.',null],
+      ['Enable AWS CloudTrail','Go to CloudTrail → Create trail. Name it SOC-Lab-Trail. Enable for all regions. Store logs in a new S3 bucket. This captures every API call.',null],
+      ['Enable AWS GuardDuty','Go to GuardDuty → Enable GuardDuty (free 30-day trial). It automatically ingests CloudTrail, VPC Flow Logs, and DNS logs and runs ML-based threat detection.',null],
+      ['Simulate IAM privilege escalation','Create a new IAM user, then immediately attach AdministratorAccess policy to that user. This is a textbook priv-esc event that GuardDuty will flag.','aws iam create-user --user-name testuser\naws iam attach-user-policy --user-name testuser \\\n  --policy-arn arn:aws:iam::aws:policy/AdministratorAccess'],
+      ['Simulate unauthorized S3 access','Create a bucket, upload a test file, then attempt to access it without credentials. CloudTrail logs the access-denied event as an anomaly.','aws s3 mb s3://soc-lab-test-bucket-00001\necho "test" > t.txt && aws s3 cp t.txt s3://soc-lab-test-bucket-00001/\naws s3 ls s3://soc-lab-test-bucket-00001 --no-sign-request'],
+      ['Review CloudTrail event history','Go to CloudTrail → Event history. Filter by event name: CreateUser, AttachUserPolicy, GetObject. Note event time, user agent, source IP, and request parameters.',null],
+      ['Analyze GuardDuty findings','Go to GuardDuty → Findings. For each finding note the severity level, finding type, affected resource, and recommended remediation. This IS the Tier 1 triage workflow.',null],
+      ['Export logs to Splunk (bonus)','Install the Splunk Add-on for AWS from Splunkbase. Configure it to pull from your CloudTrail S3 bucket. Cloud findings now appear alongside your Windows SIEM data.',null]
+    ],
+    resume:[
+      'Configured AWS CloudTrail/GuardDuty to detect and alert on suspicious IAM events including unauthorized access and misconfigured S3 buckets.',
+      'Analyzed cloud logs and set up alerting rules to simulate SOC Tier 2 cloud monitoring workflows.'
     ]
   },
   {
-    id: 5,
-    title: "Endpoint Monitoring with Sysmon + Wazuh",
-    time: "~10–15 hrs",
-    cost: "$0",
-    score: "8/10",
-    scoreHigh: false,
-    skills: ["Host-based detection", "Event ID mapping", "Sigma/YARA rules"],
-    tools: ["Sysmon", "Wazuh", "Windows VM", "PowerShell"],
-    summary: "Use Sysmon and Wazuh for endpoint log collection. Simulate malware behavior and trigger alerts on suspicious actions.",
-    simulates: "Tier 1–2 endpoint alert investigation in EDR-like setups (e.g., CrowdStrike, Defender ATP). Detecting suspicious behavior via host logs (credential dumping, persistence).",
-    bullets: [
-      "Ingested Sysmon logs into Wazuh and developed custom alert rules to detect credential dumping and persistence tactics.",
-      "Simulated malware behavior and validated endpoint alerts via process tree and registry activity."
+    id:'lab5', num:'05', bonus:false,
+    title:'Endpoint Monitoring with Sysmon + Wazuh',
+    time:'10–15 hrs', cost:'$0', value:'8/10', valueHigh:false,
+    tags:['Wazuh 4.x','Sysmon','Windows VM','PowerShell','YARA'],
+    skills:'Host-based detection · event ID mapping · Sigma/YARA rules · EDR simulation',
+    simulate:'Tier 1–2 endpoint alert investigation in EDR-like setups (CrowdStrike, Defender ATP). Detecting credential dumping and persistence.',
+    defaultStatus:'todo',
+    steps:[
+      ['Install Wazuh single-node on Ubuntu','Use the official Wazuh quick-install script. This sets up the manager, OpenSearch indexer, and dashboard in one shot. Takes about 10 minutes.','curl -sO https://packages.wazuh.com/4.7/wazuh-install.sh\nsudo bash wazuh-install.sh -a'],
+      ['Access Wazuh dashboard','Open https://localhost in your browser (accept the self-signed cert). Log in with the admin credentials printed at install. Explore Security Events and Threat Hunting.',null],
+      ['Deploy Wazuh agent on Windows VM','In Wazuh dashboard go to Agents → Deploy new agent. Choose Windows, enter your Wazuh manager IP, follow the PowerShell install steps shown. The agent enrolls automatically.',null],
+      ['Verify Sysmon integration','Sysmon is already running from Lab 1. The Wazuh agent picks up Sysmon events automatically. Verify in the dashboard under your agent.','Get-Service Sysmon64'],
+      ['Simulate credential dumping','Download Mimikatz in your isolated lab VM only. Run it to access lsass.exe. Sysmon Event ID 10 (process access to lsass) and Wazuh should both alert.','# PowerShell (isolated lab VM only):\nInvoke-WebRequest https://github.com/gentilkiwi/mimikatz/releases/latest/download/mimikatz_trunk.zip -OutFile C:\\Tools\\mimi.zip\nExpand-Archive C:\\Tools\\mimi.zip C:\\Tools\\mimikatz'],
+      ['Simulate persistence via registry Run key','Add a Run key to simulate malware persistence. Sysmon Event ID 13 (registry modification) should fire.','reg add HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run /v TestPersist /t REG_SZ /d "C:\\Windows\\System32\\cmd.exe" /f'],
+      ['Create a custom Wazuh detection rule','SSH into the Wazuh manager. Add rules to local_rules.xml targeting lsass access and Run key modifications. Reload the manager after saving.','sudo nano /var/ossec/etc/rules/local_rules.xml\nsudo systemctl restart wazuh-manager'],
+      ['Review and screenshot alerts in dashboard','Filter by your Windows agent in the Wazuh dashboard. Review each alert: rule ID, MITRE ATT&CK technique, severity. Screenshot for your portfolio.',null]
+    ],
+    resume:[
+      'Ingested Sysmon logs into Wazuh and developed custom alert rules to detect credential dumping and persistence tactics.',
+      'Simulated malware behavior and validated endpoint alerts via process tree and registry activity.'
     ]
   },
   {
-    id: 6,
-    title: "Threat Hunting in Real Datasets",
-    time: "~10–20 hrs",
-    cost: "$0",
-    score: "8/10",
-    scoreHigh: false,
-    skills: ["SPL/KQL", "Anomaly detection", "ATT&CK mapping"],
-    tools: ["Splunk", "Elastic", "CyberDefenders datasets"],
-    summary: "Analyze log datasets (Windows, Zeek) for anomalies. Build a timeline of attacker activity based on raw logs.",
-    simulates: "Tier 2 threat hunting workflow: identify suspicious patterns missed by alerts. Investigation using structured queries and hypothesis-driven analysis.",
-    bullets: [
-      "Performed threat hunt on Zeek and Windows log dataset; identified lateral movement and brute-force login indicators using SPL queries.",
-      "Mapped findings to MITRE ATT&CK framework and built a comprehensive attack timeline."
+    id:'lab6', num:'06', bonus:false,
+    title:'Threat Hunting in Real Datasets',
+    time:'10–20 hrs', cost:'$0', value:'8/10', valueHigh:false,
+    tags:['Splunk','Elastic','CyberDefenders','Zeek','MITRE ATT&CK'],
+    skills:'SPL/KQL · anomaly detection · ATT&CK mapping · hypothesis-driven analysis',
+    simulate:'Tier 2 threat hunting workflow — identify patterns missed by automated alerts using structured, hypothesis-driven investigation.',
+    defaultStatus:'todo',
+    steps:[
+      ['Download a CyberDefenders challenge dataset','Go to cyberdefenders.org. Good free options: "APT-Incident-Response", "BlueSky", or "CyberDefenders-OpTinderbox". These include real-format Windows and Zeek logs.',null],
+      ['Import into Splunk','Extract the archive. In Splunk go to Settings → Add Data → Upload. Index the files in a new "hunting" index.','index=hunting | stats count by sourcetype'],
+      ['Write your hunting hypothesis FIRST','Before writing a single query, write down a specific hypothesis: "I believe there is lateral movement via SMB". Good hunters lead with questions, not aimless searching.',null],
+      ['Hunt for lateral movement indicators','Search for network logon events (Logon Type 3) from one source to multiple destinations — a key lateral movement indicator.','index=hunting EventCode=4624 Logon_Type=3\n| stats count dc(ComputerName) as dest_count by Account_Name\n| where dest_count > 3\n| sort -dest_count'],
+      ['Hunt for spray-and-pray brute force','Look for accounts with many failures (4625) quickly followed by a success (4624) from the same source.','index=hunting (EventCode=4624 OR EventCode=4625)\n| bucket _time span=5m\n| stats values(EventCode) as codes, count by _time, Account_Name\n| where mvcount(codes) > 1'],
+      ['Analyze Zeek conn.log for C2 beaconing','Look for regular outbound connections to the same external IP at fixed intervals — the classic C2 beaconing pattern.','index=hunting sourcetype="bro:conn" NOT dest_ip IN (10.0.0.0/8,192.168.0.0/16)\n| stats count avg(duration) as avg_dur by dest_ip\n| where count > 50\n| sort -count'],
+      ['Map findings to MITRE ATT&CK Navigator','For each confirmed finding, map to an ATT&CK technique in the Navigator. Export as PNG for your report. mitre-attack.github.io/attack-navigator',null],
+      ['Build the comprehensive attack timeline','Create a table: Timestamp | Source | Destination | Action | ATT&CK Technique | Notes. This is your main deliverable and the most important artifact for interviews.',null]
+    ],
+    resume:[
+      'Performed threat hunt on Zeek and Windows log dataset; identified lateral movement and brute-force login indicators using SPL queries.',
+      'Mapped findings to MITRE ATT&CK framework and built a comprehensive attack timeline.'
     ]
   },
   {
-    id: 7,
-    title: "Security Automation Script (SOAR Lite)",
-    time: "~8–15 hrs",
-    cost: "$0",
-    score: "7/10",
-    scoreHigh: false,
-    skills: ["Scripting", "API use", "Automation logic"],
-    tools: ["Python", "VirusTotal API", "AbuseIPDB", "Log samples"],
-    summary: "Build a Python or PowerShell script to enrich IOCs, parse logs, or auto-tag suspicious events.",
-    simulates: "Automating Tier 1 enrichment and triage tasks seen in SOAR platforms. Saves analyst time by streamlining manual processes.",
-    bullets: [
-      "Developed Python script to enrich IOC indicators via VirusTotal/AbuseIPDB APIs and summarize alert context in JSON reports.",
-      "Automated noisy log filtering using PowerShell to support faster SOC response."
+    id:'lab7', num:'07', bonus:false,
+    title:'Security Automation Script (SOAR Lite)',
+    time:'8–15 hrs', cost:'$0', value:'7/10', valueHigh:false,
+    tags:['Python 3','VirusTotal API','AbuseIPDB API','JSON','SOAR'],
+    skills:'Scripting · REST API use · automation logic · IOC enrichment · triage automation',
+    simulate:'Automating Tier 1 enrichment and triage tasks seen in SOAR platforms like Splunk SOAR and Palo Alto XSOAR.',
+    defaultStatus:'todo',
+    steps:[
+      ['Get free API keys','Register at virustotal.com (4 lookups/min free). Register at abuseipdb.com (1,000 checks/day free). Store keys as environment variables — never hardcode.','export VT_API_KEY="your_virustotal_key"\nexport AIPDB_API_KEY="your_abuseipdb_key"'],
+      ['Set up Python environment','Create a project folder and install the only required external library.','mkdir soar-lite && cd soar-lite\npip3 install requests'],
+      ['Write the VirusTotal IP lookup function','Create ioc_enricher.py. Query the VT API v3 for an IP and return malicious/suspicious counts. Add a 15-second sleep for the free tier rate limit.','import requests, os, time\ndef vt_check_ip(ip):\n    r = requests.get(\n        f"https://www.virustotal.com/api/v3/ip_addresses/{ip}",\n        headers={"x-apikey": os.environ["VT_API_KEY"]}\n    )\n    if r.status_code == 200:\n        return r.json()["data"]["attributes"]["last_analysis_stats"]\n    time.sleep(15)\n    return None'],
+      ['Write the AbuseIPDB lookup function','Query AbuseIPDB and return the abuse confidence score (0–100) and total report count for an IP.','def abipdb_check(ip):\n    r = requests.get("https://api.abuseipdb.com/api/v2/check",\n        headers={"Accept":"application/json","Key":os.environ["AIPDB_API_KEY"]},\n        params={"ipAddress":ip,"maxAgeInDays":90})\n    d = r.json()["data"]\n    return {"score":d["abuseConfidenceScore"],"reports":d["totalReports"]}'],
+      ['Build the log IOC extractor','Write a function that reads a log file and extracts all unique IP addresses using regex.','import re\ndef extract_ips(filepath):\n    pat = re.compile(r\'\\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\b\')\n    return list(set(pat.findall(open(filepath).read())))'],
+      ['Add auto-tagging verdict logic','This is the core SOAR automation — replacing manual analyst lookups with a rule-based verdict engine.','def get_verdict(vt_stats, abuse_score):\n    mal = (vt_stats or {}).get("malicious", 0)\n    if mal > 5 or abuse_score > 75: return "MALICIOUS"\n    if mal > 0 or abuse_score > 25: return "SUSPICIOUS"\n    return "CLEAN"'],
+      ['Generate JSON enrichment report','Wire everything together: parse log → extract IPs → enrich each → write JSON output with timestamp, IOC, scores, and verdict.','import json\nfrom datetime import datetime\ndef enrich_log(logfile):\n    results = []\n    for ip in extract_ips(logfile):\n        vt = vt_check_ip(ip)\n        ab = abipdb_check(ip)\n        results.append({"ts":datetime.utcnow().isoformat(),"ioc":ip,\n            "vt_malicious":(vt or {}).get("malicious","N/A"),\n            "abuse_score":ab["score"],\n            "verdict":get_verdict(vt, ab["score"])})\n    json.dump(results, open("report.json","w"), indent=2)\n    return results'],
+      ['Test with a sample log file','Create a test log with known bad IPs from a public threat feed, then run your script and verify it correctly identifies them.','echo "ALERT src_ip=185.220.101.34 dst=10.0.0.5" > test.log\necho "ALERT src_ip=8.8.8.8 dst=10.0.0.5" >> test.log\npython3 ioc_enricher.py test.log']
+    ],
+    resume:[
+      'Developed Python script to enrich IOC indicators via VirusTotal/AbuseIPDB APIs and summarize alert context in JSON reports.',
+      'Automated noisy log filtering using Python to support faster SOC response.'
     ]
   },
   {
-    id: 8,
-    title: "Honeypot Deployment & Threat Intel",
-    time: "~15 hrs (1–2 wks)",
-    cost: "$0–$10",
-    score: "7/10",
-    scoreHigh: false,
-    skills: ["Real attacker interaction", "Log analysis", "OSINT enrichment"],
-    tools: ["Cowrie", "ELK", "VirusTotal", "DigitalOcean"],
-    summary: "Set up Cowrie SSH honeypot to capture attacker activity. Analyze login attempts, files, and attacker IPs.",
-    simulates: "External threat intelligence monitoring, IOC extraction, and attack analysis. Observing real brute-force and botnet behavior.",
-    bullets: [
-      "Deployed SSH honeypot in cloud VM; captured and analyzed 5,000+ attacker attempts including common TTPs and password combos.",
-      "Enriched IPs with OSINT tools and documented findings in threat brief."
+    id:'lab8', num:'08', bonus:false,
+    title:'Honeypot Deployment & Threat Intel',
+    time:'~15 hrs over 1–2 weeks', cost:'$0–$10', value:'7/10', valueHigh:false,
+    tags:['Cowrie','DigitalOcean','VirusTotal','AbuseIPDB','OSINT'],
+    skills:'Real attacker interaction · log analysis · OSINT enrichment · threat brief writing',
+    simulate:'External threat intelligence monitoring, IOC extraction, and real attack analysis. Observing real brute-force and botnet behavior in the wild.',
+    defaultStatus:'todo',
+    steps:[
+      ['Set up a cloud VM','Create a DigitalOcean Droplet: Ubuntu 22.04 LTS, Basic $6/mo. New accounts often get $200 credit. Add a firewall rule allowing inbound TCP 22.',null],
+      ['Install Cowrie dependencies','SSH into your cloud VM. Install dependencies and clone the Cowrie repository.','sudo apt update && sudo apt install git python3-pip python3-venv libssl-dev libffi-dev build-essential -y\ngit clone https://github.com/cowrie/cowrie && cd cowrie'],
+      ['Set up Python venv and install Cowrie','Create the virtual environment, install requirements, and copy the default config.','python3 -m venv cowrie-env\nsource cowrie-env/bin/activate\npip install --upgrade pip && pip install -r requirements.txt\ncp cowrie.cfg.dist cowrie.cfg'],
+      ['Configure Cowrie and redirect port 22','Edit cowrie.cfg: set a fake hostname. Move real SSH to port 2222, redirect port 22 to Cowrie so it appears as the default SSH target.','# Move real SSH to 2222:\nsudo sed -i \'s/#Port 22/Port 2222/\' /etc/ssh/sshd_config\nsudo systemctl restart sshd\n# Redirect 22 to Cowrie on 2222:\nsudo iptables -t nat -A PREROUTING -p tcp --dport 22 -j REDIRECT --to-port 2222'],
+      ['Start Cowrie and verify it is listening','Start the honeypot and tail the log. Internet bots start probing within 10–30 minutes of a new cloud IP going live.','bin/cowrie start\ntail -f var/log/cowrie/cowrie.log'],
+      ['Let it run for 1–2 weeks (passive collection)','Leave it running and check logs every 2–3 days. You will collect credential stuffers, botnet scanners, and Shodan bots automatically. Do NOT interact with attackers.',null],
+      ['Analyze captured attacker data','Count unique IPs, top credentials attempted, and commands run inside the fake shell. These are your raw threat intelligence findings.','# Top attacker IPs:\njq \'.src_ip\' var/log/cowrie/cowrie.json | sort | uniq -c | sort -rn | head -20\n# Top passwords:\njq \'select(.eventid=="cowrie.login.failed") | .password\' var/log/cowrie/cowrie.json | sort | uniq -c | sort -rn | head -20'],
+      ['Enrich top IPs and write threat brief','Look up the top 20 IPs on VirusTotal, AbuseIPDB, Shodan, and WHOIS. Document country, ASN/ISP, and known botnet associations. Write a 1–2 page threat brief.',null]
+    ],
+    resume:[
+      'Deployed SSH honeypot in cloud VM; captured and analyzed 5,000+ attacker attempts including common TTPs and password combos.',
+      'Enriched IPs with OSINT tools and documented findings in threat brief.'
     ]
   },
   {
-    id: 9,
-    title: "Threat Intelligence IOC Research",
-    time: "~10–15 hrs",
-    cost: "$0",
-    score: "6/10",
-    scoreHigh: false,
-    skills: ["IOC research", "Enrichment", "ATT&CK mapping", "Reporting"],
-    tools: ["VirusTotal", "OTX", "WHOIS", "MISP"],
-    summary: "Research malware/APT, collect IOCs, enrich with tools (e.g., VirusTotal), and build a threat profile.",
-    simulates: "SOC threat intelligence feed handling, watchlist creation, adversary profiling. Assists Tier 2–3 analysts with threat correlation and prevention.",
-    bullets: [
-      "Compiled threat report on Emotet malware campaign with enriched IOCs and MITRE TTP mapping; integrated with open-source MISP platform.",
-      "Correlated indicators across logs and feeds to identify targeted activity."
+    id:'lab9', num:'09', bonus:false,
+    title:'Threat Intelligence IOC Research',
+    time:'10–15 hrs', cost:'$0', value:'6/10', valueHigh:false,
+    tags:['VirusTotal','AlienVault OTX','MISP','WHOIS','MITRE ATT&CK'],
+    skills:'IOC research · threat enrichment · ATT&CK mapping · adversary profiling',
+    simulate:'SOC threat intelligence feed handling, watchlist creation, and adversary profiling. Assists Tier 2–3 analysts with correlation and prevention.',
+    defaultStatus:'todo',
+    steps:[
+      ['Choose a well-documented malware campaign','Pick a real campaign: Emotet, Ryuk ransomware, Lazarus Group (APT38), or LockBit. All have extensive public threat reports and IOC feeds available.',null],
+      ['Collect IOCs from AlienVault OTX','Go to otx.alienvault.com. Search your campaign. Find a recent Pulse and download the IOC list as CSV. You will get IPs, domains, file hashes, and URLs.',null],
+      ['Cross-reference file hashes on VirusTotal','Submit hashes from OTX to VirusTotal. Check detection ratios, first/last submission dates, sandbox behavior, and parent/child sample relationships.','curl --request GET \\\n  "https://www.virustotal.com/api/v3/files/YOUR_SHA256" \\\n  --header "x-apikey: YOUR_API_KEY"'],
+      ['Run WHOIS enrichment on suspicious domains','Check registration date, registrar, and name servers. Domains registered less than 30 days ago are a strong malicious indicator.','whois malicious-domain.com\npython3 -c "import whois; print(whois.whois(\'domain.com\'))"'],
+      ['Map campaign TTPs to MITRE ATT&CK Navigator','Go to mitre-attack.github.io/attack-navigator. Create a new layer named after your campaign. Highlight each technique. Export as PNG for your report.',null],
+      ['Set up MISP (optional, high value)','Install MISP via Docker or use the demo at demo.misp-project.org. Create a MISP event for your campaign and import IOCs. Demonstrates real enterprise CTI tooling.','docker pull coolacid/misp-docker:core\ndocker run -d -p 443:443 coolacid/misp-docker:core'],
+      ['Create a structured IOC table','Organize by type: IP Addresses | Domains | File Hashes | Email Subjects | Mutex Names | Registry Keys. Include source, confidence (High/Med/Low), and last-seen date.',null],
+      ['Write the threat intelligence brief','Sections: Campaign Overview, Targeted Sectors, Attack Chain (with ATT&CK techniques), IOC Table, Recommended Detection Rules, Analyst Assessment. 1–2 pages.',null]
+    ],
+    resume:[
+      'Compiled threat report on Emotet malware campaign with enriched IOCs and MITRE TTP mapping; integrated with open-source MISP platform.',
+      'Correlated indicators across logs and feeds to identify targeted activity.'
     ]
   },
   {
-    id: 10,
-    title: "Phishing Email & Malware Analysis",
-    time: "~6–12 hrs",
-    cost: "$0",
-    score: "6/10",
-    scoreHigh: false,
-    skills: ["Email forensics", "Malware sandboxing", "IOC extraction"],
-    tools: ["Any.Run", "VirtualBox", "VirusTotal", "Wireshark"],
-    summary: "Analyze phishing email headers, malicious links, and malware attachments in a sandbox. Extract and report IOCs.",
-    simulates: "Tier 1 SOC phishing response — analyzing user-reported suspicious emails. Triage of email threats and basic malware behavior analysis.",
-    bullets: [
-      "Analyzed phishing email with malicious doc attachment; performed sandbox detonation and extracted PowerShell-based downloader behavior.",
-      "Mapped attack to initial access vector and blocked indicators at firewall and EDR levels."
+    id:'lab10', num:'10', bonus:false,
+    title:'Phishing Email & Malware Analysis',
+    time:'6–12 hrs', cost:'$0', value:'6/10', valueHigh:false,
+    tags:['Any.Run','VirusTotal','Wireshark','VirtualBox','Email Forensics'],
+    skills:'Email forensics · malware sandboxing · IOC extraction · phishing triage',
+    simulate:'Tier 1 SOC phishing response — analyzing user-reported suspicious emails. Triage of email threats and basic malware behavior analysis.',
+    defaultStatus:'todo',
+    steps:[
+      ['Obtain sample phishing emails safely','Download .eml samples from PhishTank (phishtank.org) or MalwareBazaar (bazaar.abuse.ch). Work ONLY inside an isolated VM — never on your host machine.',null],
+      ['Analyze email headers','Open the .eml in a text editor or use mxtoolbox.com/EmailHeaders.aspx. Check: From vs Reply-To mismatch, SPF/DKIM/DMARC failures, unusual Received chain hops, X-Originating-IP.',null],
+      ['Hash the attachment before touching it','Extract the attachment to your analysis VM. Get the SHA256 hash FIRST — standard forensic practice to document the original file state.','# PowerShell:\nGet-FileHash C:\\Samples\\suspicious.doc -Algorithm SHA256\n# Linux:\nsha256sum suspicious.doc'],
+      ['Check hash on VirusTotal','Go to virustotal.com and paste the SHA256. Review detection count, detection names, submission history, and Community tab comments.',null],
+      ['Submit to Any.Run interactive sandbox','Go to app.any.run (free public plan). Upload the malicious file, choose Windows 10 environment. Watch it execute live — this is controlled malware detonation.',null],
+      ['Analyze sandbox execution behavior','In Any.Run review: process tree (what spawned what), network connections (C2 IPs), file system changes (dropped files), registry persistence. Screenshot everything.',null],
+      ['Extract all IOCs from the report','Compile: C2 IP addresses, domains contacted, dropped file hashes, mutex names, registry run keys, HTTP request URLs, User-Agent strings.',null],
+      ['Write the phishing analysis report','Sections: Email Header Analysis, Attachment Analysis, Sandbox Execution Summary, Full IOC Table, Recommended Actions (block at email gateway, EDR, firewall).',null]
+    ],
+    resume:[
+      'Analyzed phishing email with malicious doc attachment; performed sandbox detonation and extracted PowerShell-based downloader behavior.',
+      'Mapped attack to initial access vector and blocked indicators at firewall and EDR levels.'
     ]
   },
   {
-    id: 11,
-    title: "Kali Linux Offensive Lab (Bonus)",
-    time: "~10–20 hrs",
-    cost: "$0",
-    score: "BONUS",
-    scoreHigh: true,
-    skills: ["Reconnaissance", "Network scanning", "Brute force attacks", "Exploitation", "Post-exploitation", "Blue team detection"],
-    tools: ["Kali Linux VM", "Nmap", "Hydra", "Metasploit", "CrackMapExec", "Splunk", "Wireshark"],
-    summary: "Use Kali Linux to conduct offensive operations against your Windows 11 VM target. Perform reconnaissance, brute force, and exploitation while monitoring detections in Splunk. Combines red team and blue team skills in a single exercise.",
-    simulates: "Real-world attacker methodology following the kill chain. Pairs offensive techniques with defensive detection — exactly what purple team and SOC roles require. Validates your Splunk detection rules against actual attack tools.",
-    bullets: [
-      "Conducted offensive/defensive lab exercise using Kali Linux to simulate reconnaissance, brute force, and exploitation against Windows 11 target; detected and investigated all attack phases in Splunk SIEM using custom SPL detection rules.",
-      "Performed network reconnaissance using Nmap and executed credential attacks with Hydra against Windows SMB; correlated attack traffic with MITRE ATT&CK TTPs in Splunk.",
-      "Validated SIEM detection coverage by running Kali-based attacks and confirming EventCode 4625, 4720, and 4732 alerts fired in real time."
+    id:'kali', num:'BONUS', bonus:true,
+    title:'Kali Purple Team Exercise',
+    time:'8–12 hrs', cost:'$0', value:'BONUS', valueHigh:true,
+    tags:['Kali Linux','Nmap','Hydra','Metasploit','Splunk'],
+    skills:'Offensive operations · attack simulation · purple team correlation · SPL',
+    simulate:'Real attacker TTPs executed against a live Windows target, with all attack phases correlated in a SIEM — a true purple team workflow.',
+    defaultStatus:'done',
+    steps:[
+      ['Configure Host-Only network between Kali and Windows VM','Ensure both VMs share vboxnet0. Kali (Voldemort): 192.168.56.101, Windows VM (josef-s-VM): 192.168.56.102. Confirm ping with 0% packet loss.',null],
+      ['Disable Windows Firewall on Windows VM (lab only)','Disable the firewall so attack traffic flows cleanly for detection purposes. Re-enable after the lab.','netsh advfirewall set allprofiles state off'],
+      ['Run Nmap reconnaissance','Perform a full service, script, and OS detection scan against the Windows VM. Suricata and Splunk should log the scan traffic.','nmap -sV -sC -A 192.168.56.102'],
+      ['Run Hydra RDP brute force','Brute force RDP using the rockyou.txt wordlist. This generated 971+ failed logon events (EventCode 4625) in your Splunk lab.','hydra -l administrator -P /usr/share/wordlists/rockyou.txt rdp://192.168.56.102 -t 4 -V -f'],
+      ['Attempt Metasploit EternalBlue','Configure and run ms17_010_eternalblue against the Windows 11 target. Patched systems should resist — document the result either way.','msfconsole\nuse exploit/windows/smb/ms17_010_eternalblue\nset RHOSTS 192.168.56.102\nset LHOST 192.168.56.101\nrun'],
+      ['Correlate all attack phases in Splunk','Search for the complete attack chain: Nmap (SYN events), Hydra (971 failed logons), and EternalBlue attempt all visible in Splunk.','index=main (EventCode=4625 OR EventCode=4624)\n| stats count by Account_Name\n| sort -count'],
+      ['Build attack timeline from SIEM data','Document each phase with timestamps from Splunk: Recon → Credential Attack → Exploit Attempt. This is your purple team analysis deliverable.',null]
+    ],
+    resume:[
+      'Conducted offensive/defensive purple team exercise using Kali Linux against Windows 11 target; performed Nmap reconnaissance, Hydra RDP brute force generating 971+ detected events, and Metasploit EternalBlue assessment.',
+      'Correlated all attack phases in Splunk SIEM using SPL queries and documented full attack timeline.'
     ]
   }
 ];
 
-const saved = localStorage.getItem('soc-lab-statuses');
-const statuses = saved ? JSON.parse(saved) : {};
+// ════════════════════════════════════════════════════════════════════
+//  APP STATE
+// ════════════════════════════════════════════════════════════════════
+let statuses = {};
+let fbRef = null;
 
-function saveStatuses() {
-  localStorage.setItem('soc-lab-statuses', JSON.stringify(statuses));
-}
-
-function updateStats() {
-  let done = 0, wip = 0;
-  Object.values(statuses).forEach(s => {
-    if (s === 'done') done++;
-    if (s === 'wip') wip++;
-  });
-  document.getElementById('stat-done').textContent = done;
-  document.getElementById('stat-wip').textContent = wip;
-  const pct = Math.round((done / labs.length) * 100);
-  document.getElementById('progress-pct').textContent = pct + '%';
-  document.getElementById('progress-bar').style.width = pct + '%';
-}
-
-function setStatus(id, status, card) {
-  if (statuses[id] === status) {
-    delete statuses[id];
-    card.classList.remove('complete', 'in-progress');
-  } else {
-    statuses[id] = status;
-    card.classList.remove('complete', 'in-progress');
-    if (status === 'done') card.classList.add('complete');
-    if (status === 'wip') card.classList.add('in-progress');
+function getSyncKey() {
+  let k = localStorage.getItem('soc_sync_key');
+  if (!k) {
+    k = Math.random().toString(36).substring(2,6).toUpperCase() +
+        Math.random().toString(36).substring(2,6).toUpperCase();
+    localStorage.setItem('soc_sync_key', k);
   }
-  const btnDone = card.querySelector('.btn-done');
-  const btnWip = card.querySelector('.btn-wip');
-  btnDone.classList.toggle('active-done', statuses[id] === 'done');
-  btnWip.classList.toggle('active-wip', statuses[id] === 'wip');
-  saveStatuses();
+  return k;
+}
+
+function saveLocal() {
+  localStorage.setItem('soc_tracker_v3', JSON.stringify(statuses));
+}
+
+function loadLocal() {
+  const s = localStorage.getItem('soc_tracker_v3');
+  if (s) {
+    try { statuses = JSON.parse(s); } catch(e){}
+  } else {
+    // Apply defaults
+    LABS.forEach(l => { statuses[l.id] = l.defaultStatus; });
+    saveLocal();
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  SYNC BAR
+// ════════════════════════════════════════════════════════════════════
+let setupOpen = false;
+
+function renderSyncBar(state) {
+  const bar = document.getElementById('sync-bar');
+  const key = getSyncKey();
+
+  if (!FIREBASE_CONFIG) {
+    bar.className = 'sync-bar';
+    bar.innerHTML = `
+      <div class="sync-row">
+        <div class="sync-dot warn"></div>
+        <span class="sync-label">SYNC DISABLED</span>
+        <span style="color:var(--muted);font-family:'Exo 2',sans-serif;font-size:.78rem;margin-left:4px;">— progress saves to this browser only</span>
+        <div class="sync-actions">
+          <button class="sync-btn" onclick="toggleSetup()">SETUP SYNC ▾</button>
+        </div>
+      </div>
+      <div class="sync-setup" id="sync-setup-panel">
+        <div style="color:var(--warn);font-size:.62rem;letter-spacing:2px;margin-bottom:12px;">FIREBASE REALTIME DATABASE SETUP — FREE, 5 MIN</div>
+        <div class="setup-step"><span class="setup-num">01</span><span class="setup-text">Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → Create a project (any name)</span></div>
+        <div class="setup-step"><span class="setup-num">02</span><span class="setup-text">Build → Realtime Database → Create database → Start in test mode</span></div>
+        <div class="setup-step"><span class="setup-num">03</span><span class="setup-text">Project Settings (gear icon) → General → scroll to "Your apps" → Add app → Web → Register → copy the firebaseConfig object</span></div>
+        <div class="setup-step"><span class="setup-num">04</span><span class="setup-text">Open your index.html locally, find <code style="color:var(--accent);font-size:.75rem;">const FIREBASE_CONFIG = null;</code> and replace null with your config object</span></div>
+        <div class="setup-step"><span class="setup-num">05</span><span class="setup-text">Push to GitHub — sync is live. Your Sync Key below works across all devices with this config.</span></div>
+        <div class="sync-note">Your Sync Key: <span style="color:var(--accent);letter-spacing:3px;">${key}</span> — enter this same key on any other device to share progress.</div>
+      </div>`;
+    if (setupOpen) document.getElementById('sync-setup-panel').classList.add('open');
+    return;
+  }
+
+  if (state === 'connecting') {
+    bar.className = 'sync-bar';
+    bar.innerHTML = `<div class="sync-row"><div class="sync-dot warn"></div><span class="sync-label">CONNECTING TO FIREBASE...</span></div>`;
+  } else if (state === 'connected') {
+    bar.className = 'sync-bar connected';
+    bar.innerHTML = `
+      <div class="sync-row">
+        <div class="sync-dot on"></div>
+        <span class="sync-label">SYNCED</span>
+        <span style="color:var(--muted);margin:0 6px;">|</span>
+        <span class="sync-label">SYNC KEY:</span>
+        <span class="sync-key-val">${key}</span>
+        <div class="sync-actions">
+          <button class="sync-btn green" onclick="copySyncKey()">COPY KEY</button>
+          <button class="sync-btn" onclick="promptChangeKey()">CHANGE KEY</button>
+        </div>
+      </div>
+      <div class="sync-note" style="margin-top:8px;">Enter this key on any other device to sync your progress. Keep Firebase config + same key = same data.</div>`;
+  } else if (state === 'error') {
+    bar.className = 'sync-bar error';
+    bar.innerHTML = `<div class="sync-row"><div class="sync-dot" style="background:var(--danger)"></div><span class="sync-label">FIREBASE CONNECTION ERROR</span><span style="color:var(--muted);font-family:'Exo 2',sans-serif;font-size:.78rem;margin-left:6px;">— check databaseURL in your config and Realtime Database rules</span></div>`;
+  }
+}
+
+function toggleSetup() {
+  setupOpen = !setupOpen;
+  const panel = document.getElementById('sync-setup-panel');
+  if (panel) panel.classList.toggle('open', setupOpen);
+}
+
+function copySyncKey() {
+  navigator.clipboard.writeText(getSyncKey());
+  showToast('SYNC KEY COPIED');
+}
+
+function promptChangeKey() {
+  const newKey = prompt('Enter sync key from another device (min 6 chars):');
+  if (newKey && newKey.trim().length >= 6) {
+    localStorage.setItem('soc_sync_key', newKey.trim().toUpperCase());
+    showToast('SYNC KEY UPDATED — RELOADING...');
+    setTimeout(() => location.reload(), 1200);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  STATUS MANAGEMENT
+// ════════════════════════════════════════════════════════════════════
+function setStatus(labId, status) {
+  const current = statuses[labId];
+  // Toggle: clicking active status resets to todo
+  const next = (current === status) ? 'todo' : status;
+  statuses[labId] = next;
+  saveLocal();
+  if (fbRef) fbRef.child(labId).set(next);
+  renderAll();
+  showToast(next === 'done' ? '✓ LAB MARKED COMPLETE' : next === 'wip' ? '⟳ MARKED IN PROGRESS' : 'RESET TO TODO');
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════════════════════════
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderCard(lab) {
+  const status = statuses[lab.id] || 'todo';
+  const isDone = status === 'done';
+  const isWip = status === 'wip';
+  const cardClass = ['lab-card',
+    isDone ? 'complete' : isWip ? 'in-progress' : '',
+    lab.bonus ? 'bonus-card' : ''
+  ].filter(Boolean).join(' ');
+
+  const stepsHtml = lab.steps.map((s,i) => {
+    const cmd = s[2];
+    const cmdHtml = cmd ? `<div class="cmd-block" data-cmd="${encodeURIComponent(cmd)}">
+      <pre><code>${esc(cmd)}</code></pre>
+      <button class="copy-btn">COPY</button>
+    </div>` : '';
+    return `<div class="step-item">
+      <span class="step-num">${String(i+1).padStart(2,'0')}</span>
+      <div class="step-body">
+        <div class="step-title">${esc(s[0])}</div>
+        <div class="step-desc">${esc(s[1])}</div>
+        ${cmdHtml}
+      </div>
+    </div>`;
+  }).join('');
+
+  const resumeHtml = lab.resume.map(b => `
+    <div class="resume-item" data-bullet="${encodeURIComponent(b)}">
+      <span class="resume-slash">//</span>
+      <span class="resume-text">${esc(b)}</span>
+      <button class="resume-copy">COPY</button>
+    </div>`).join('');
+
+  const scoreClass = lab.valueHigh ? 'high' : '';
+  const scoreBadge = lab.bonus
+    ? `<span class="badge badge-bonus">BONUS</span>`
+    : `<span class="badge badge-score ${scoreClass}">RESUME ${lab.value}</span>`;
+
+  return `<div class="${cardClass}" id="card-${lab.id}">
+    <div class="lab-header" onclick="toggleCard('${lab.id}')">
+      <span class="lab-num ${lab.bonus?'bonus':''}">${lab.num}</span>
+      <div class="lab-title-wrap">
+        <div class="lab-title">${esc(lab.title)}</div>
+        <div class="lab-meta">
+          <span class="badge badge-time">${lab.time}</span>
+          <span class="badge badge-cost">${lab.cost}</span>
+          ${scoreBadge}
+        </div>
+      </div>
+      <div class="lab-controls">
+        <button class="status-btn ${isDone?'active-done':''}" onclick="event.stopPropagation();setStatus('${lab.id}','done')">DONE</button>
+        <button class="status-btn ${isWip?'active-wip':''}" onclick="event.stopPropagation();setStatus('${lab.id}','wip')">WIP</button>
+      </div>
+      <span class="expand-icon">▼</span>
+    </div>
+    <div class="lab-body">
+      <div class="section-hdr">WHAT IT SIMULATES</div>
+      <div class="simulate-text">${esc(lab.simulate)}</div>
+      <div class="section-hdr">TOOLS &amp; SKILLS</div>
+      <div class="info-pills">${lab.tags.map(t=>`<span class="info-pill">${esc(t)}</span>`).join('')}</div>
+      <div class="skills-text">${esc(lab.skills)}</div>
+      <div class="section-hdr">STEP-BY-STEP GUIDE</div>
+      <div class="steps-list">${stepsHtml}</div>
+      <div class="section-hdr">RESUME BULLETS</div>
+      <div class="resume-list">${resumeHtml}</div>
+      <div class="resume-tip">// Personalize these with your actual numbers and findings before adding to your resume.</div>
+    </div>
+  </div>`;
+}
+
+function renderAll() {
+  document.getElementById('labs-container').innerHTML = LABS.map(renderCard).join('');
   updateStats();
 }
 
-function copyBullet(text, btn) {
-  navigator.clipboard.writeText(text).then(() => {
-    btn.textContent = 'COPIED';
-    btn.classList.add('copied');
-    const toast = document.getElementById('toast');
-    toast.classList.add('show');
-    setTimeout(() => {
-      btn.textContent = 'COPY';
-      btn.classList.remove('copied');
-      toast.classList.remove('show');
-    }, 1800);
-  });
-}
-
-function renderLabs() {
-  const container = document.getElementById('labs-container');
-  labs.forEach(lab => {
-    const card = document.createElement('div');
-    card.className = 'lab-card';
-    card.id = `lab-${lab.id}`;
-
-    const bulletsHTML = lab.bullets.map(b => `
-      <div class="resume-bullet">
-        <span class="bullet-icon">▸</span>
-        <span class="bullet-text">${b} <button class="copy-btn" onclick="event.stopPropagation(); copyBullet(\`${b}\`, this)">COPY</button></span>
-      </div>
-    `).join('');
-
-    const toolsHTML = lab.tools.map(t => `<span class="tool-tag">${t}</span>`).join('');
-    const skillsHTML = lab.skills.map(s => `<span class="skill-tag">${s}</span>`).join('');
-
-    card.innerHTML = `
-      <div class="lab-header" onclick="toggleCard(${lab.id})">
-        <div class="lab-num">0${lab.id < 10 ? lab.id : lab.id}</div>
-        <div class="lab-title-wrap">
-          <div class="lab-title">${lab.title.toUpperCase()}</div>
-          <div class="lab-meta">
-            <span class="badge badge-time">⏱ ${lab.time}</span>
-            <span class="badge badge-cost">$ ${lab.cost}</span>
-            <span class="badge badge-score ${lab.scoreHigh ? 'high' : ''}">★ ${lab.score}</span>
-          </div>
-        </div>
-        <div class="lab-controls" onclick="event.stopPropagation()">
-          <button class="status-btn btn-wip" onclick="setStatus(${lab.id}, 'wip', document.getElementById('lab-${lab.id}'))">WIP</button>
-          <button class="status-btn btn-done" onclick="setStatus(${lab.id}, 'done', document.getElementById('lab-${lab.id}'))">DONE</button>
-        </div>
-        <div class="expand-icon">▼</div>
-      </div>
-      <div class="lab-body">
-        <div class="section-title">// Summary</div>
-        <div class="summary-text">${lab.summary}</div>
-
-        <div class="section-title">// What It Simulates</div>
-        <div class="simulates-text">${lab.simulates}</div>
-
-        <div class="section-title">// Skills</div>
-        <div class="skills-list">${skillsHTML}</div>
-
-        <div class="section-title">// Tools Required</div>
-        <div class="tools-list">${toolsHTML}</div>
-
-        <div class="resume-section">
-          <div class="section-title">// Resume Bullets — Copy These</div>
-          ${bulletsHTML}
-        </div>
-      </div>
-    `;
-
-    container.appendChild(card);
-  });
-}
-
 function toggleCard(id) {
-  const card = document.getElementById(`lab-${id}`);
-  card.classList.toggle('expanded');
+  const el = document.getElementById('card-' + id);
+  if (el) el.classList.toggle('expanded');
 }
 
-renderLabs();
+function updateStats() {
+  const done = LABS.filter(l => (statuses[l.id]||'todo') === 'done').length;
+  const wip  = LABS.filter(l => (statuses[l.id]||'todo') === 'wip').length;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-wip').textContent  = wip;
+  const pct = Math.round((done / LABS.length) * 100);
+  document.getElementById('prog-pct').textContent  = pct + '%';
+  document.getElementById('prog-fill').style.width = pct + '%';
+}
 
-// Restore saved statuses on load
-Object.keys(statuses).forEach(id => {
-  const card = document.getElementById(`lab-${id}`);
-  if (!card) return;
-  const status = statuses[id];
-  if (status === 'done') card.classList.add('complete');
-  if (status === 'wip') card.classList.add('in-progress');
-  card.querySelector('.btn-done').classList.toggle('active-done', status === 'done');
-  card.querySelector('.btn-wip').classList.toggle('active-wip', status === 'wip');
+// ════════════════════════════════════════════════════════════════════
+//  COPY HANDLERS
+// ════════════════════════════════════════════════════════════════════
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('copy-btn')) {
+    const block = e.target.closest('.cmd-block');
+    if (!block) return;
+    const text = decodeURIComponent(block.dataset.cmd || '');
+    navigator.clipboard.writeText(text).catch(()=>{});
+    e.target.textContent = 'DONE';
+    e.target.classList.add('copied');
+    setTimeout(()=>{ e.target.textContent='COPY'; e.target.classList.remove('copied'); }, 1600);
+  }
+  if (e.target.classList.contains('resume-copy')) {
+    const item = e.target.closest('.resume-item');
+    if (!item) return;
+    const text = decodeURIComponent(item.dataset.bullet || '');
+    navigator.clipboard.writeText(text).catch(()=>{});
+    e.target.textContent = 'DONE';
+    e.target.classList.add('copied');
+    setTimeout(()=>{ e.target.textContent='COPY'; e.target.classList.remove('copied'); }, 1600);
+    showToast('RESUME BULLET COPIED');
+  }
 });
 
-updateStats();
+// ════════════════════════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  FIREBASE SYNC
+// ════════════════════════════════════════════════════════════════════
+function initFirebase(config) {
+  renderSyncBar('connecting');
+  try {
+    firebase.initializeApp(config);
+    const db = firebase.database();
+    const key = getSyncKey();
+    fbRef = db.ref('trackers/' + key + '/labs');
+
+    fbRef.on('value', (snap) => {
+      const data = snap.val();
+      if (data && typeof data === 'object') {
+        statuses = Object.assign({}, statuses, data);
+        saveLocal();
+        renderAll();
+      }
+      renderSyncBar('connected');
+    }, (err) => {
+      console.error('Firebase error:', err);
+      renderSyncBar('error');
+    });
+
+  } catch(err) {
+    console.error('Firebase init error:', err);
+    renderSyncBar('error');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════════
+(function init() {
+  loadLocal();
+  renderSyncBar(null);
+  renderAll();
+  if (FIREBASE_CONFIG) {
+    initFirebase(FIREBASE_CONFIG);
+  }
+})();
 </script>
 </body>
 </html>
