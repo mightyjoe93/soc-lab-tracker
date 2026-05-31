@@ -706,7 +706,12 @@ const labs = [
   }
 ];
 
-const statuses = {};
+const saved = localStorage.getItem('soc-lab-statuses');
+const statuses = saved ? JSON.parse(saved) : {};
+
+function saveStatuses() {
+  localStorage.setItem('soc-lab-statuses', JSON.stringify(statuses));
+}
 
 function updateStats() {
   let done = 0, wip = 0;
@@ -735,6 +740,7 @@ function setStatus(id, status, card) {
   const btnWip = card.querySelector('.btn-wip');
   btnDone.classList.toggle('active-done', statuses[id] === 'done');
   btnWip.classList.toggle('active-wip', statuses[id] === 'wip');
+  saveStatuses();
   updateStats();
 }
 
@@ -816,6 +822,18 @@ function toggleCard(id) {
 }
 
 renderLabs();
+
+// Restore saved statuses on load
+Object.keys(statuses).forEach(id => {
+  const card = document.getElementById(`lab-${id}`);
+  if (!card) return;
+  const status = statuses[id];
+  if (status === 'done') card.classList.add('complete');
+  if (status === 'wip') card.classList.add('in-progress');
+  card.querySelector('.btn-done').classList.toggle('active-done', status === 'done');
+  card.querySelector('.btn-wip').classList.toggle('active-wip', status === 'wip');
+});
+
 updateStats();
 </script>
 </body>
