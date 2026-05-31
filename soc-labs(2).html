@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOC Analyst Lab Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Exo+2:wght@300;400;600&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --panel: #0f1318;
+    --border: #1e2a35;
+    --accent: #00e5ff;
+    --accent2: #7c3aed;
+    --accent3: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --text: #c9d1d9;
+    --muted: #4a5568;
+    --bright: #e2e8f0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 50px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .header-tag {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--accent);
+    font-size: 0.75rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    opacity: 0.8;
+  }
+
+  h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 700;
+    color: var(--bright);
+    letter-spacing: 2px;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--muted);
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+  }
+
+  .stat-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 14px 20px;
+    flex: 1;
+    min-width: 140px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-box::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 60px; height: 60px;
+    background: radial-gradient(circle, rgba(0,229,255,0.05), transparent);
+  }
+
+  .stat-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stat-box:nth-child(2) { border-left-color: var(--accent2); }
+  .stat-box:nth-child(2) .stat-value { color: var(--accent2); }
+  .stat-box:nth-child(3) { border-left-color: var(--accent3); }
+  .stat-box:nth-child(3) .stat-value { color: var(--accent3); }
+  .stat-box:nth-child(4) { border-left-color: var(--warn); }
+  .stat-box:nth-child(4) .stat-value { color: var(--warn); }
+
+  /* Progress bar */
+  .progress-wrap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    margin-bottom: 36px;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+
+  .progress-track {
+    background: var(--border);
+    height: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    transition: width 0.6s ease;
+    position: relative;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0;
+    width: 20px; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4));
+    animation: shimmer 1.5s ease infinite;
+  }
+
+  @keyframes shimmer { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+  /* Lab cards */
+  .lab-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .lab-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--muted);
+    transition: background 0.3s;
+  }
+
+  .lab-card.complete::before { background: var(--accent3); }
+  .lab-card.in-progress::before { background: var(--warn); }
+
+  .lab-card:hover {
+    border-color: rgba(0,229,255,0.3);
+    box-shadow: 0 0 20px rgba(0,229,255,0.05);
+  }
+
+  .lab-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 20px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .lab-num {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    min-width: 30px;
+  }
+
+  .lab-title-wrap { flex: 1; }
+
+  .lab-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--bright);
+    letter-spacing: 0.5px;
+  }
+
+  .lab-meta {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    padding: 2px 8px;
+    border: 1px solid;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .badge-time { color: var(--muted); border-color: var(--border); }
+  .badge-cost { color: var(--accent3); border-color: rgba(16,185,129,0.3); }
+  .badge-score { color: var(--warn); border-color: rgba(245,158,11,0.3); }
+
+  .badge-score.high { color: var(--accent); border-color: rgba(0,229,255,0.3); }
+
+  .lab-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .status-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+
+  .status-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .status-btn.active-done { border-color: var(--accent3); color: var(--accent3); background: rgba(16,185,129,0.08); }
+  .status-btn.active-wip { border-color: var(--warn); color: var(--warn); background: rgba(245,158,11,0.08); }
+
+  .expand-icon {
+    color: var(--muted);
+    font-size: 0.8rem;
+    transition: transform 0.3s;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .lab-card.expanded .expand-icon { transform: rotate(180deg); }
+
+  /* Lab body */
+  .lab-body {
+    display: none;
+    padding: 0 20px 20px 66px;
+    border-top: 1px solid var(--border);
+    margin-top: 0;
+  }
+
+  .lab-card.expanded .lab-body { display: block; }
+
+  .section-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 18px 0 8px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .info-item {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+  }
+
+  .info-key {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+  }
+
+  .info-val {
+    font-size: 0.82rem;
+    color: var(--text);
+  }
+
+  .summary-text {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text);
+    background: rgba(0,229,255,0.03);
+    border-left: 2px solid rgba(0,229,255,0.2);
+    padding: 10px 14px;
+  }
+
+  .simulates-text {
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  /* Resume bullets */
+  .resume-section {
+    background: rgba(124,58,237,0.06);
+    border: 1px solid rgba(124,58,237,0.2);
+    padding: 16px;
+    margin-top: 8px;
+  }
+
+  .resume-section .section-title {
+    color: var(--accent2);
+    margin-top: 0;
+  }
+
+  .resume-bullet {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: flex-start;
+  }
+
+  .bullet-icon {
+    color: var(--accent2);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+
+  .bullet-text {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--bright);
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 400;
+  }
+
+  .copy-btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    padding: 3px 8px;
+    background: rgba(124,58,237,0.15);
+    border: 1px solid rgba(124,58,237,0.3);
+    color: var(--accent2);
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .copy-btn:hover { background: rgba(124,58,237,0.3); }
+  .copy-btn.copied { color: var(--accent3); border-color: var(--accent3); background: rgba(16,185,129,0.1); }
+
+  /* Tools list */
+  .tools-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tool-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    padding: 3px 10px;
+    background: rgba(0,229,255,0.05);
+    border: 1px solid rgba(0,229,255,0.15);
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+
+  /* Skills list */
+  .skills-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .skill-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    padding: 3px 10px;
+    background: rgba(245,158,11,0.05);
+    border: 1px solid rgba(245,158,11,0.15);
+    color: var(--warn);
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 50px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--accent3);
+    color: #000;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    padding: 10px 16px;
+    letter-spacing: 1px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 100;
+  }
+
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="header-tag">// SOC Analyst Portfolio</div>
+    <h1>LAB <span>TRACKER</span></h1>
+    <div class="subtitle">10 HANDS-ON PROJECTS // SKILLS &amp; RESUME BUILDER</div>
+  </header>
+
+  <div class="stats-bar">
+    <div class="stat-box">
+      <div class="stat-label">Total Labs</div>
+      <div class="stat-value">11</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Completed</div>
+      <div class="stat-value" id="stat-done">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">In Progress</div>
+      <div class="stat-value" id="stat-wip">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Est. Hours</div>
+      <div class="stat-value">155+</div>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>COMPLETION PROGRESS</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-bar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div id="labs-container"></div>
+
+  <footer>
+    ORIGINAL CONTENT CURATED BY ARTEM POLYNKO // TRACKER BUILT FOR PERSONAL USE
+  </footer>
+</div>
+
+<div class="toast" id="toast">COPIED TO CLIPBOARD</div>
+
+<script>
+const labs = [
+  {
+    id: 1,
+    title: "SIEM Log Monitoring & Threat Detection",
+    time: "~20–30 hrs",
+    cost: "$0",
+    score: "10/10",
+    scoreHigh: true,
+    skills: ["SIEM use", "Log parsing", "Detection engineering", "Correlation"],
+    tools: ["Splunk Free", "ELK Stack", "Sysmon", "Windows/Linux VMs"],
+    summary: "Build a Splunk or ELK Stack SIEM lab. Ingest logs (e.g., Sysmon, Linux auth) and detect simulated attacks like brute force or PowerShell misuse.",
+    simulates: "Real Tier 1–2 SOC alert triage, log analysis, and use case development. Hands-on detection engineering in a monitored environment.",
+    bullets: [
+      "Built Splunk SIEM lab to ingest and analyze Sysmon/Windows logs; created custom detection rules for brute force and PowerShell-based attacks.",
+      "Simulated real-world attacks and investigated events using ELK Stack, improving response skills and detection logic."
+    ]
+  },
+  {
+    id: 2,
+    title: "Simulated Phishing Attack & Incident Response",
+    time: "~15–25 hrs",
+    cost: "$0",
+    score: "9/10",
+    scoreHigh: true,
+    skills: ["IR lifecycle", "Windows log analysis", "Evidence collection", "Reporting"],
+    tools: ["Windows VM", "Sysinternals", "Event Viewer", "Kali", "SET"],
+    summary: "Simulate a phishing-to-malware scenario in a lab. Investigate with logs and produce a detailed incident response report.",
+    simulates: "A full SOC incident involving phishing, malware, log review, containment, and documentation. Simulates Tier 1–2 escalation and response workflow.",
+    bullets: [
+      "Simulated phishing attack in lab and performed full IR process including log review, malware identification, and executive-level reporting.",
+      "Traced infection path via Windows event logs (Event ID 4688, Sysmon logs) and documented remediation steps in formal IR report."
+    ]
+  },
+  {
+    id: 3,
+    title: "IDS Deployment & Packet Analysis",
+    time: "~15–20 hrs",
+    cost: "$0",
+    score: "9/10",
+    scoreHigh: true,
+    skills: ["IDS/IPS", "Network protocols", "Rule tuning", "Packet analysis"],
+    tools: ["Snort", "Suricata", "Wireshark", "Metasploitable", "Kali"],
+    summary: "Deploy Snort or Suricata. Simulate attacks (e.g., Nmap, SQLi) and analyze alerts and PCAPs using Wireshark.",
+    simulates: "Real-time network intrusion detection tasks. Alert investigation based on IDS telemetry — common in Tier 1–2 SOC environments.",
+    bullets: [
+      "Deployed Suricata IDS to monitor test network; generated attack traffic and tuned rules to reduce false positives and detect SQL injection attempts.",
+      "Investigated PCAPs using Wireshark and correlated alerts with MITRE ATT&CK TTPs."
+    ]
+  },
+  {
+    id: 4,
+    title: "Cloud Security Monitoring with AWS/Azure Logs",
+    time: "~10–20 hrs",
+    cost: "$0",
+    score: "9/10",
+    scoreHigh: true,
+    skills: ["Cloud security", "Logging", "IAM misconfig detection"],
+    tools: ["AWS Free Tier", "GuardDuty", "CloudTrail", "ELK/Splunk"],
+    summary: "Enable CloudTrail or Defender logs. Simulate events (e.g., IAM abuse, unauthorized S3 access) and analyze them via console or SIEM.",
+    simulates: "Tier 1/2 monitoring of cloud security logs in modern hybrid SOCs. Detecting IAM privilege escalation, misconfigurations, cloud anomalies.",
+    bullets: [
+      "Configured AWS CloudTrail/GuardDuty to detect and alert on suspicious IAM events including unauthorized access and misconfigured S3 buckets.",
+      "Analyzed cloud logs and set up alerting rules to simulate SOC Tier 2 cloud monitoring workflows."
+    ]
+  },
+  {
+    id: 5,
+    title: "Endpoint Monitoring with Sysmon + Wazuh",
+    time: "~10–15 hrs",
+    cost: "$0",
+    score: "8/10",
+    scoreHigh: false,
+    skills: ["Host-based detection", "Event ID mapping", "Sigma/YARA rules"],
+    tools: ["Sysmon", "Wazuh", "Windows VM", "PowerShell"],
+    summary: "Use Sysmon and Wazuh for endpoint log collection. Simulate malware behavior and trigger alerts on suspicious actions.",
+    simulates: "Tier 1–2 endpoint alert investigation in EDR-like setups (e.g., CrowdStrike, Defender ATP). Detecting suspicious behavior via host logs (credential dumping, persistence).",
+    bullets: [
+      "Ingested Sysmon logs into Wazuh and developed custom alert rules to detect credential dumping and persistence tactics.",
+      "Simulated malware behavior and validated endpoint alerts via process tree and registry activity."
+    ]
+  },
+  {
+    id: 6,
+    title: "Threat Hunting in Real Datasets",
+    time: "~10–20 hrs",
+    cost: "$0",
+    score: "8/10",
+    scoreHigh: false,
+    skills: ["SPL/KQL", "Anomaly detection", "ATT&CK mapping"],
+    tools: ["Splunk", "Elastic", "CyberDefenders datasets"],
+    summary: "Analyze log datasets (Windows, Zeek) for anomalies. Build a timeline of attacker activity based on raw logs.",
+    simulates: "Tier 2 threat hunting workflow: identify suspicious patterns missed by alerts. Investigation using structured queries and hypothesis-driven analysis.",
+    bullets: [
+      "Performed threat hunt on Zeek and Windows log dataset; identified lateral movement and brute-force login indicators using SPL queries.",
+      "Mapped findings to MITRE ATT&CK framework and built a comprehensive attack timeline."
+    ]
+  },
+  {
+    id: 7,
+    title: "Security Automation Script (SOAR Lite)",
+    time: "~8–15 hrs",
+    cost: "$0",
+    score: "7/10",
+    scoreHigh: false,
+    skills: ["Scripting", "API use", "Automation logic"],
+    tools: ["Python", "VirusTotal API", "AbuseIPDB", "Log samples"],
+    summary: "Build a Python or PowerShell script to enrich IOCs, parse logs, or auto-tag suspicious events.",
+    simulates: "Automating Tier 1 enrichment and triage tasks seen in SOAR platforms. Saves analyst time by streamlining manual processes.",
+    bullets: [
+      "Developed Python script to enrich IOC indicators via VirusTotal/AbuseIPDB APIs and summarize alert context in JSON reports.",
+      "Automated noisy log filtering using PowerShell to support faster SOC response."
+    ]
+  },
+  {
+    id: 8,
+    title: "Honeypot Deployment & Threat Intel",
+    time: "~15 hrs (1–2 wks)",
+    cost: "$0–$10",
+    score: "7/10",
+    scoreHigh: false,
+    skills: ["Real attacker interaction", "Log analysis", "OSINT enrichment"],
+    tools: ["Cowrie", "ELK", "VirusTotal", "DigitalOcean"],
+    summary: "Set up Cowrie SSH honeypot to capture attacker activity. Analyze login attempts, files, and attacker IPs.",
+    simulates: "External threat intelligence monitoring, IOC extraction, and attack analysis. Observing real brute-force and botnet behavior.",
+    bullets: [
+      "Deployed SSH honeypot in cloud VM; captured and analyzed 5,000+ attacker attempts including common TTPs and password combos.",
+      "Enriched IPs with OSINT tools and documented findings in threat brief."
+    ]
+  },
+  {
+    id: 9,
+    title: "Threat Intelligence IOC Research",
+    time: "~10–15 hrs",
+    cost: "$0",
+    score: "6/10",
+    scoreHigh: false,
+    skills: ["IOC research", "Enrichment", "ATT&CK mapping", "Reporting"],
+    tools: ["VirusTotal", "OTX", "WHOIS", "MISP"],
+    summary: "Research malware/APT, collect IOCs, enrich with tools (e.g., VirusTotal), and build a threat profile.",
+    simulates: "SOC threat intelligence feed handling, watchlist creation, adversary profiling. Assists Tier 2–3 analysts with threat correlation and prevention.",
+    bullets: [
+      "Compiled threat report on Emotet malware campaign with enriched IOCs and MITRE TTP mapping; integrated with open-source MISP platform.",
+      "Correlated indicators across logs and feeds to identify targeted activity."
+    ]
+  },
+  {
+    id: 10,
+    title: "Phishing Email & Malware Analysis",
+    time: "~6–12 hrs",
+    cost: "$0",
+    score: "6/10",
+    scoreHigh: false,
+    skills: ["Email forensics", "Malware sandboxing", "IOC extraction"],
+    tools: ["Any.Run", "VirtualBox", "VirusTotal", "Wireshark"],
+    summary: "Analyze phishing email headers, malicious links, and malware attachments in a sandbox. Extract and report IOCs.",
+    simulates: "Tier 1 SOC phishing response — analyzing user-reported suspicious emails. Triage of email threats and basic malware behavior analysis.",
+    bullets: [
+      "Analyzed phishing email with malicious doc attachment; performed sandbox detonation and extracted PowerShell-based downloader behavior.",
+      "Mapped attack to initial access vector and blocked indicators at firewall and EDR levels."
+    ]
+  },
+  {
+    id: 11,
+    title: "Kali Linux Offensive Lab (Bonus)",
+    time: "~10–20 hrs",
+    cost: "$0",
+    score: "BONUS",
+    scoreHigh: true,
+    skills: ["Reconnaissance", "Network scanning", "Brute force attacks", "Exploitation", "Post-exploitation", "Blue team detection"],
+    tools: ["Kali Linux VM", "Nmap", "Hydra", "Metasploit", "CrackMapExec", "Splunk", "Wireshark"],
+    summary: "Use Kali Linux to conduct offensive operations against your Windows 11 VM target. Perform reconnaissance, brute force, and exploitation while monitoring detections in Splunk. Combines red team and blue team skills in a single exercise.",
+    simulates: "Real-world attacker methodology following the kill chain. Pairs offensive techniques with defensive detection — exactly what purple team and SOC roles require. Validates your Splunk detection rules against actual attack tools.",
+    bullets: [
+      "Conducted offensive/defensive lab exercise using Kali Linux to simulate reconnaissance, brute force, and exploitation against Windows 11 target; detected and investigated all attack phases in Splunk SIEM using custom SPL detection rules.",
+      "Performed network reconnaissance using Nmap and executed credential attacks with Hydra against Windows SMB; correlated attack traffic with MITRE ATT&CK TTPs in Splunk.",
+      "Validated SIEM detection coverage by running Kali-based attacks and confirming EventCode 4625, 4720, and 4732 alerts fired in real time."
+    ]
+  }
+];
+
+const statuses = {};
+
+function updateStats() {
+  let done = 0, wip = 0;
+  Object.values(statuses).forEach(s => {
+    if (s === 'done') done++;
+    if (s === 'wip') wip++;
+  });
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-wip').textContent = wip;
+  const pct = Math.round((done / labs.length) * 100);
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('progress-bar').style.width = pct + '%';
+}
+
+function setStatus(id, status, card) {
+  if (statuses[id] === status) {
+    delete statuses[id];
+    card.classList.remove('complete', 'in-progress');
+  } else {
+    statuses[id] = status;
+    card.classList.remove('complete', 'in-progress');
+    if (status === 'done') card.classList.add('complete');
+    if (status === 'wip') card.classList.add('in-progress');
+  }
+  const btnDone = card.querySelector('.btn-done');
+  const btnWip = card.querySelector('.btn-wip');
+  btnDone.classList.toggle('active-done', statuses[id] === 'done');
+  btnWip.classList.toggle('active-wip', statuses[id] === 'wip');
+  updateStats();
+}
+
+function copyBullet(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'COPIED';
+    btn.classList.add('copied');
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => {
+      btn.textContent = 'COPY';
+      btn.classList.remove('copied');
+      toast.classList.remove('show');
+    }, 1800);
+  });
+}
+
+function renderLabs() {
+  const container = document.getElementById('labs-container');
+  labs.forEach(lab => {
+    const card = document.createElement('div');
+    card.className = 'lab-card';
+    card.id = `lab-${lab.id}`;
+
+    const bulletsHTML = lab.bullets.map(b => `
+      <div class="resume-bullet">
+        <span class="bullet-icon">▸</span>
+        <span class="bullet-text">${b} <button class="copy-btn" onclick="event.stopPropagation(); copyBullet(\`${b}\`, this)">COPY</button></span>
+      </div>
+    `).join('');
+
+    const toolsHTML = lab.tools.map(t => `<span class="tool-tag">${t}</span>`).join('');
+    const skillsHTML = lab.skills.map(s => `<span class="skill-tag">${s}</span>`).join('');
+
+    card.innerHTML = `
+      <div class="lab-header" onclick="toggleCard(${lab.id})">
+        <div class="lab-num">0${lab.id < 10 ? lab.id : lab.id}</div>
+        <div class="lab-title-wrap">
+          <div class="lab-title">${lab.title.toUpperCase()}</div>
+          <div class="lab-meta">
+            <span class="badge badge-time">⏱ ${lab.time}</span>
+            <span class="badge badge-cost">$ ${lab.cost}</span>
+            <span class="badge badge-score ${lab.scoreHigh ? 'high' : ''}">★ ${lab.score}</span>
+          </div>
+        </div>
+        <div class="lab-controls" onclick="event.stopPropagation()">
+          <button class="status-btn btn-wip" onclick="setStatus(${lab.id}, 'wip', document.getElementById('lab-${lab.id}'))">WIP</button>
+          <button class="status-btn btn-done" onclick="setStatus(${lab.id}, 'done', document.getElementById('lab-${lab.id}'))">DONE</button>
+        </div>
+        <div class="expand-icon">▼</div>
+      </div>
+      <div class="lab-body">
+        <div class="section-title">// Summary</div>
+        <div class="summary-text">${lab.summary}</div>
+
+        <div class="section-title">// What It Simulates</div>
+        <div class="simulates-text">${lab.simulates}</div>
+
+        <div class="section-title">// Skills</div>
+        <div class="skills-list">${skillsHTML}</div>
+
+        <div class="section-title">// Tools Required</div>
+        <div class="tools-list">${toolsHTML}</div>
+
+        <div class="resume-section">
+          <div class="section-title">// Resume Bullets — Copy These</div>
+          ${bulletsHTML}
+        </div>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+function toggleCard(id) {
+  const card = document.getElementById(`lab-${id}`);
+  card.classList.toggle('expanded');
+}
+
+renderLabs();
+updateStats();
+</script>
+</body>
+</html>
